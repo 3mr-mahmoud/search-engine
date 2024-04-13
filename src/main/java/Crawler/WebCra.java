@@ -7,13 +7,12 @@ import org.jsoup.Jsoup;
 import org.jsoup.nodes.Element;
 import org.jsoup.select.Elements;
 
-import java.util.Vector;
-
 
 public class WebCra implements Runnable{
     private Mongo DB;
-    private static boolean done = false;
-    private static boolean stopSearch = false;
+    private static Boolean done = new Boolean(false);   //Boolean to stop crawling when reach 6000 crawled pages
+    private static Boolean stopSearch = new Boolean(false); //Boolean to stop inserting seeds when reach 15000 links
+
     public WebCra(Mongo DB){
         this.DB = DB;
 
@@ -31,39 +30,36 @@ public class WebCra implements Runnable{
         String seed = "";
         long foundCrawled = DB.CountCrawled();
         long foundSeeded = DB.CountSeeded();
-        if(foundCrawled >= DB.MAX_PAGES ){
-            done = true;
-        }else if(foundCrawled + foundSeeded >= DB.MORE_PAGES){
-            stopSearch = true;
-            seed = DB.GetSeed();
-        }else{
-            seed = DB.GetSeed();
+        // is here synchronization????
+        synchronized (this.done){
+            if(foundCrawled >= DB.MAX_PAGES ){
+                done = true;
+            }else if(foundCrawled + foundSeeded >= DB.MORE_PAGES){
+                stopSearch = true;
+                seed = DB.GetSeed();
+            }else{
+                seed = DB.GetSeed();
+            }
         }
+
         if(!done){
             org.jsoup.nodes.Document doc = GetDoc(seed);
             if(doc != null){
-                String body = doc.body().toString();
+                String body = doc.body().text().toString();    //convert body html element to string for compacting
                 String hash = CompactSt(body);
                 if(!DB.isCrawled(hash,seed)){
-                    String title = doc.title();
-                    if(title == null){
-                        title = seed;
-                    }
                     org.bson.Document newPage = new org.bson.Document()
-                            .append("Title",title)
-                            .append("Body",body)
+                            .append("Page",doc)
                             .append("URL",seed)
                             .append("Compact",hash);
                     DB.InsertPage(newPage);
                     if(!stopSearch) {
                         Elements links = doc.select("a[href]");
-                        Vector<Document> URLs = new Vector<>();
                         for (Element link : links) {
                             String URL = link.absUrl("href");
                             String linkNormal = URL.split("[?#]")[0];
-                            URLs.addElement(new Document().append("URL", linkNormal));
+                            DB.InsertSeed(new Document().append("URL", linkNormal));
                         }
-                        DB.InsertSeeds(URLs);
                     }
                 }
             }

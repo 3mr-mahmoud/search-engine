@@ -4,14 +4,16 @@ import com.mongodb.ConnectionString;
 import com.mongodb.client.*;
 import org.bson.Document;
 
+import javax.print.Doc;
 import java.io.BufferedReader;
 import java.io.FileReader;
 import java.io.IOException;
 import java.util.Vector;
 
 public class Mongo {
-    public final int MORE_PAGES  = 60000;
+    public final int MORE_PAGES  = 15000;
     public final int MAX_PAGES = 6000;
+    private Integer id = new Integer(0);
     private MongoClient client;
     private MongoDatabase DB;
     private MongoCollection<Document> seedCollection;
@@ -97,17 +99,17 @@ public class Mongo {
     public void InsertPage(org.bson.Document doc){
         try{
             synchronized (this){
-                crawlerCollection.insertOne(doc);
+                crawlerCollection.insertOne(doc.append("_id",id++));
             }
         }catch (Exception e){
             System.out.println("Error in inserting new crawled page " + e.getMessage());
         }
     }
 
-    public void InsertSeeds(Vector<Document> seeds){
+    public void InsertSeed(Document seeds){
         try{
             synchronized (this){
-                seedCollection.insertMany(seeds);
+                seedCollection.insertOne(seeds);
                 this.notifyAll();
             }
         }catch (Exception e) {
