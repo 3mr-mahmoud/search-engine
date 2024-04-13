@@ -7,6 +7,8 @@ import org.jsoup.Jsoup;
 import org.jsoup.nodes.Element;
 import org.jsoup.select.Elements;
 
+import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
 
 public class WebCra implements Runnable{
     private Mongo DB;
@@ -48,10 +50,12 @@ public class WebCra implements Runnable{
                 String body = doc.body().text().toString();    //convert body html element to string for compacting
                 String hash = CompactSt(body);
                 if(!DB.isCrawled(hash,seed)){
+                    DateTimeFormatter formatter = DateTimeFormatter.ofPattern("MM-dd HH:mm:ss");
                     org.bson.Document newPage = new org.bson.Document()
-                            .append("Page",doc)
+                            .append("Page",doc.toString())
                             .append("URL",seed)
-                            .append("Compact",hash);
+                            .append("Compact",hash)
+                            .append("CrawlTime", LocalDateTime.now().format(formatter).toString());
                     DB.InsertPage(newPage);
                     if(!stopSearch) {
                         Elements links = doc.select("a[href]");
