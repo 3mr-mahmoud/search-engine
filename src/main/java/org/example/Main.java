@@ -15,7 +15,7 @@ public class Main {
         Thread[] threads = new Thread[numOfThreads];
         int i = 0;
         for (Thread ele : threads){
-            ele = new Thread(new WebCra(DB));
+            ele = new Thread(new WebCrawler(DB));
             ele.setName(Integer.toString(i++));
             ele.start();
         }

@@ -31,8 +31,8 @@ public class WebCrawler implements Runnable {
     public void Crawl() {
 
         String seed = "";
-        long foundCrawled = DB.CountCrawled();
-        long foundSeeded = DB.CountSeeded();
+        long foundCrawled = DB.Count("Crawler");
+        long foundSeeded = DB.Count("Seeds");
         // is here synchronization????
         synchronized (this.done) {
             if (foundCrawled >= DB.MAX_PAGES) {
