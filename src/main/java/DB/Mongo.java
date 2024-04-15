@@ -23,7 +23,7 @@ public class Mongo {
     private MongoCollection<Document> indexedUrlsCollection;
 
     public Mongo() {
-        ConnectionString connectionString = new ConnectionString("mongodb://localhost:27018");
+        ConnectionString connectionString = new ConnectionString("mongodb://localhost:27017");
         client = MongoClients.create(connectionString);
         DB = client.getDatabase("Engine");
         seedCollection = DB.getCollection("Seeds");
@@ -92,7 +92,6 @@ public class Mongo {
     // return 0;
     // }
     // }
-
     public long Count(String collectionName) {
         try {
             long size = 0;
@@ -153,6 +152,48 @@ public class Mongo {
             }
         } catch (Exception e) {
             System.out.println("Error in inserting new crawled page " + e.getMessage());
+        }
+    }
+
+    public boolean isWordIndexed(String word)
+    {
+        try {
+            boolean isDup;
+            synchronized (this) {
+                isDup = indexerCollection.find(new Document().append("word", word)).first() != null;
+            }
+            return isDup;
+        } catch (Exception e) {
+            System.out.println("Error in checking existance the content of page " + e.getMessage());
+            return true;
+        }
+    }
+
+    public void InsertWordIndexer(org.bson.Document doc) {
+        try {
+            synchronized (this) {
+                indexerCollection.insertOne(doc);
+            }
+        } catch (Exception e) {
+            System.out.println("Error in inserting new indexer page " + e.getMessage());
+        }
+    }
+
+    public Document GetIndexedWord(String word)
+    {
+        return indexerCollection.find(new Document().append("word", word)).first();
+    }
+
+    public void UpdateIndexWord(String word, Document doc)
+    {
+        try {
+            synchronized (this)
+            {
+                indexerCollection.findOneAndDelete(new Document().append("word",word));
+                InsertWordIndexer(doc);
+            }
+        } catch (Exception e) {
+            System.out.println("Error in inserting new indexer page " + e.getMessage());
         }
     }
 

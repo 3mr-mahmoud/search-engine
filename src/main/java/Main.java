@@ -1,3 +1,6 @@
+import Crawler.WebCrawler;
+import DB.Mongo;
+import Indexer.Indexer;
 import Indexer.StopWordsChecker;
 import org.jsoup.nodes.Document;
 import org.jsoup.Jsoup;
@@ -13,54 +16,24 @@ public class Main {
 
 
     public static void main(String[] args) {
-        String html = "<div>Computers*<p> he is An a she <a href='http://example.com/'>coMput...</a> computing.</p></div>";
-        Document doc = Jsoup.parse(html);
-        Elements elements = doc.getAllElements();
-        PorterStemmer porterStemmer = new PorterStemmer();
-        StopWordsChecker checker = new StopWordsChecker();
-        Elements titleTags = doc.select("title, h1, h2, h3, h4, h5, h6");
-        HashMap<String, Integer> wordCountMap = new HashMap<>();
-        long wordsCount = 0;
-
-        for (Element element : elements) {
-            if (element.ownText().isEmpty()) {
-                continue;
-            }
-
-            String[] words = element.ownText().split("\\s+");
-
-            for (String word : words) {
-
-                if(checker.isStopWord(word)) {
-                    continue;
-                }
-
-                wordsCount++;
-
-
-                // clean it
-                String cleanWord = word.replaceAll("[^A-Za-z0-9]","");
-                // stem it
-                String stemmedWord = porterStemmer.stemWord(cleanWord);
-
-                if (wordCountMap.containsKey(stemmedWord)) {
-                    wordCountMap.put(stemmedWord, wordCountMap.get(stemmedWord) + 1);
-                } else {
-                    wordCountMap.put(stemmedWord, 1);
-                }
-
-
-
-
-
-
-
+        Mongo DB = new Mongo(); //create mongo data base
+        /*          MultiThreading                */
+        int numOfThreads = 1;
+        Thread[] threads = new Thread[numOfThreads];
+        int i = 0;
+        for (Thread ele : threads){
+            ele = new Thread(new Indexer(DB));
+            ele.setName(Integer.toString(i++));
+            ele.start();
+        }
+        for (Thread ele : threads) {
+            try {
+                if (ele != null)
+                    ele.join();
+            } catch (InterruptedException e) {
+                System.out.println("Error in finishing thread with id = " + ele.getId() + e.getMessage());
             }
         }
-        System.out.println("Word Count:"+wordsCount);
-        for (String word : wordCountMap.keySet()) {
-            int count = wordCountMap.get(word);
-            System.out.println(word + ": " + count);
-        }
+
     }
 }
