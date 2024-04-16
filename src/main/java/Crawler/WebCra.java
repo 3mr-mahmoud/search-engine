@@ -7,9 +7,13 @@ import org.jsoup.Jsoup;
 import org.jsoup.nodes.Element;
 import org.jsoup.select.Elements;
 
+import java.io.ByteArrayInputStream;
 import java.net.URL;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
+
+import com.panforge.robotstxt.RobotsTxt;
+
 
 public class WebCra implements Runnable {
     private Mongo DB;
@@ -71,7 +75,7 @@ public class WebCra implements Runnable {
                         for (Element link : links) {
                             String URL = link.absUrl("href");
                             String linkNormal = URL.split("[?#]")[0];
-                            if (CheckRobot(linkNormal))
+                            if (CheckRobot(linkNormal, "*"))
                                 DB.InsertSeed(new Document("URL", linkNormal));
                             if (stopSearch)
                                 break;
@@ -82,7 +86,6 @@ public class WebCra implements Runnable {
             if (done)
                 return;
         }
-
     }
 
     private org.jsoup.nodes.Document GetDoc(String url) {
@@ -109,29 +112,13 @@ public class WebCra implements Runnable {
         }
     }
 
-    private boolean CheckRobot(String url) {
+    private boolean CheckRobot(String url, String userAgent) {
         try {
             URL link = new URL(url);
-            //get link of robots.txt of this url
-            String admin = link.getProtocol() + "://" + link.getHost() + "/robots.txt";
-            //We specify user agents as some websites doesn't allow direct access to robots.txt file
-            String userAgent = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/97.0.4692.71 Safari/537.36";
-            org.jsoup.nodes.Document doc = Jsoup.connect(admin).userAgent(userAgent).ignoreContentType(true).followRedirects(false).get();
-            String[] lines = doc.body().text().toLowerCase().split("user-agent: ");
-            String[] global = null;
-            for (String line : lines) {
-                if (line.startsWith("* ")) {
-                    global = line.split("disallow: ");
-                }
-            }
-            for (int i = 1; i < global.length; i++) {
-                int index = global[i].indexOf(" ");
-                if (index != -1)
-                    if (url.contains(global[i].substring(0, index)))
-                        return false;
-                    else if (url.contains(global[i]))
-                        return false;
-            }
+            org.jsoup.nodes.Document response = Jsoup.connect(link.getProtocol() + "://" + link.getHost() + "/robots.txt").get();
+            String robotsTxtContent = response.body().text();
+            RobotsTxt robotsTxt = RobotsTxt.read(new ByteArrayInputStream(robotsTxtContent.getBytes()));
+            return robotsTxt.query(userAgent, url);
         } catch (Exception e) {
             System.out.println("Error in check robots of link: " + url + " " + e.getMessage());
         }

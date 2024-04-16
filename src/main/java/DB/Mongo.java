@@ -20,7 +20,7 @@ public class Mongo {
     private MongoCollection<Document> crawlerCollection;
 
     public Mongo() {
-        ConnectionString connectionString = new ConnectionString("mongodb://localhost:27017");
+        ConnectionString connectionString = new ConnectionString("mongodb://localhost:27018");
         client = MongoClients.create(connectionString);
         DB = client.getDatabase("Engine");
         seedCollection = DB.getCollection("Seeds");
