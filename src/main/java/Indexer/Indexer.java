@@ -12,9 +12,7 @@ import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 
-
 public class Indexer implements Runnable {
-
 
     /*
      * todo
@@ -33,11 +31,12 @@ public class Indexer implements Runnable {
 
     private Mongo DB;
 
-    private int chunkSize = 10;
-    private int currentChunkIndex = 0;
+    private int indexedUrls;
+    public static int currentChunkIndex;
 
     public Indexer(Mongo DB) {
         this.DB = DB;
+        indexedUrls = (int) DB.Count("IndexedUrls");
     }
 
     public void run() {
@@ -49,134 +48,133 @@ public class Indexer implements Runnable {
     }
 
     public void index() {
-        // initialize chunkIndex
-        int indexedUrls = (int) DB.Count("IndexedUrls");
-        currentChunkIndex = (indexedUrls / chunkSize) - 1;
         int localChunkIndex = -1;
-        synchronized (this) {
-            currentChunkIndex++;
-            localChunkIndex = currentChunkIndex;
-        }
 
-        // get my chunk of documents
-        MongoCursor<Document> cursor = DB.getCollection("Crawler").find()
-                .skip(localChunkIndex * chunkSize)
-                .limit(chunkSize)
-                .iterator();
-        // process my chunk
-        while (cursor.hasNext()) {
-            Document doc = cursor.next();
 
-            String url = doc.getString("URL");
-            System.out.println(url);
-            if (DB.isIndexed(url)) {
-                System.out.println("Page already indexed");
-                return;
+
+        while (DB.Count("IndexedUrls") < DB.Count("Crawler")) {
+
+            synchronized (DB) {
+                currentChunkIndex++;
+                localChunkIndex = currentChunkIndex;
             }
 
-            org.jsoup.nodes.Document pageDoc = Jsoup.parse(doc.getString("Page"));
-            Elements elements = pageDoc.getAllElements();
-            PorterStemmer porterStemmer = new PorterStemmer();
-            StopWordsChecker checker = new StopWordsChecker();
-            Elements headingTags = pageDoc.select("h1, h2, h3, h4, h5, h6");
-            Elements titleTags = pageDoc.select("title");
-            HashMap<String, wordInfo> wordCountMap = new HashMap<>();
-            long wordsCount = 0;
+            // get my document
+            Document doc = DB.getCollection("Crawler").find().skip(localChunkIndex).first();
+            // process my chunk
+            if (doc != null) {
+                String url = doc.getString("URL");
+                System.out.println(url);
 
-            for (Element element : elements) {
-                if (element.ownText().isEmpty()) {
+                if (DB.isIndexed(url)) {
+                    System.out.println("Page already indexed");
                     continue;
                 }
 
-                String[] words = element.ownText().split("\\s+");
-                for (String word : words) {
-                    boolean inHead = false;
-                    if(element.nodeName().equals("h1")||element.nodeName().equals("h5")||element.nodeName().equals("h2")||element.nodeName().equals("h3")||element.nodeName().equals("h4")||element.nodeName().equals("h6"))
-                        inHead = true;
-                    String S = pageDoc.getElementsByTag("title").text().toLowerCase();
-                    boolean inTitle = (element.nodeName().equals("title"));
+                // mark the page as indexed
+                DB.insertIndexedUrl(url);
 
+                org.jsoup.nodes.Document pageDoc = Jsoup.parse(doc.getString("Page"));
+                Elements elements = pageDoc.getAllElements();
+                PorterStemmer porterStemmer = new PorterStemmer();
+                StopWordsChecker checker = new StopWordsChecker();
+                HashMap<String, wordInfo> wordCountMap = new HashMap<>();
+                long wordsCount = 0;
 
-                    if(checker.isStopWord(word)) {
+                for (Element element : elements) {
+                    if (element.ownText().isEmpty()) {
                         continue;
                     }
-                    wordsCount++;
 
-                    // clean it
-                    String cleanWord = word.replaceAll("[^A-Za-z0-9]","");
-                    // stem it
-                    String stemmedWord = porterStemmer.stemWord(cleanWord);
-                    if(stemmedWord.isEmpty())
-                        continue;
-                    if (wordCountMap.containsKey(stemmedWord)) {
-                        wordCountMap.get(stemmedWord).count++;
-                        if(inTitle)
-                            wordCountMap.get(stemmedWord).inTitle = inTitle;
-                        if(inHead)
-                            wordCountMap.get(stemmedWord).inHead = inHead;
+                    String[] words = element.ownText().split("\\s+");
+                    for (String word : words) {
+                        boolean inHead = false;
+                        if (element.nodeName().equals("h1") || element.nodeName().equals("h5")
+                                || element.nodeName().equals("h2") || element.nodeName().equals("h3")
+                                || element.nodeName().equals("h4") || element.nodeName().equals("h6"))
+                            inHead = true;
+                        String S = pageDoc.getElementsByTag("title").text().toLowerCase();
+                        boolean inTitle = (element.nodeName().equals("title"));
 
+                        if (checker.isStopWord(word)) {
+                            continue;
+                        }
+                        wordsCount++;
+
+                        // clean it
+                        String cleanWord = word.replaceAll("[^A-Za-z0-9]", "");
+                        // stem it
+                        String stemmedWord = porterStemmer.stemWord(cleanWord);
+                        if (stemmedWord.isEmpty())
+                            continue;
+                        if (wordCountMap.containsKey(stemmedWord)) {
+                            wordCountMap.get(stemmedWord).count++;
+                            if (inTitle)
+                                wordCountMap.get(stemmedWord).inTitle = inTitle;
+                            if (inHead)
+                                wordCountMap.get(stemmedWord).inHead = inHead;
+
+                        } else {
+                            wordInfo I = new wordInfo();
+                            wordCountMap.put(stemmedWord, I);
+                            wordCountMap.get(stemmedWord).count = 1;
+                            if (inTitle) {
+                                wordCountMap.get(stemmedWord).inTitle = inTitle;
+                            }
+                            if (inHead)
+
+                            {
+                                wordCountMap.get(stemmedWord).inHead = inHead;
+                            }
+                        }
+                    }
+                }
+
+                for (String word : wordCountMap.keySet()) {
+                    if (!DB.isWordIndexed(word)) {
+                        org.bson.Document doc1 = new org.bson.Document();
+                        doc1.append("url", url);
+                        wordInfo info = wordCountMap.get(word);
+
+                        doc1.append("inHead", info.inHead);
+                        doc1.append("inTitle", info.inTitle);
+                        doc1.append("count", info.count);
+                        doc1.append("tf", (float) info.count / (float) wordsCount);
+
+                        List<Document> documents = Arrays.asList(doc1);
+
+                        org.bson.Document newPage = new org.bson.Document()
+                                .append("word", word)
+                                .append("documentCount", 1)
+                                .append("documents", documents);
+                        DB.InsertWordIndexer(newPage);
                     } else {
-                        wordInfo I = new wordInfo();
-                        wordCountMap.put(stemmedWord, I);
-                        wordCountMap.get(stemmedWord).count = 1;
-                        if(inTitle)
-                        {
-                            wordCountMap.get(stemmedWord).inTitle = inTitle;}
-                        if(inHead)
+                        // Update page
+                        Document page = DB.GetIndexedWord(word);
+                        org.bson.Document doc1 = new org.bson.Document();
+                        wordInfo info = wordCountMap.get(word);
 
-                        {wordCountMap.get(stemmedWord).inHead = inHead;}
+                        doc1.append("url", url);
+                        doc1.append("inHead", info.inHead);
+                        doc1.append("inTitle", info.inTitle);
+                        doc1.append("count", info.count);
+                        doc1.append("tf", (float) info.count / (float) wordsCount);
+
+                        List<Document> documents = page.get("documents", List.class);
+                        Integer count = page.get("documentCount", Integer.class);
+
+                        count++;
+                        documents.add(doc1);
+                        page.put("documentCount", count);
+                        page.put("documents", documents);
+                        DB.UpdateIndexWord(word, page);
                     }
+
                 }
-            }
-//            System.out.println("Word Count:"+wordsCount);
-//             {
-//                wordInfo info = wordCountMap.get(word);
-//                System.out.println(word + ": " + info.count + " inHead: " + wordCountMap.get(word).inHead + " inTitle: " + wordCountMap.get(word).inTitle);
-            for (String word : wordCountMap.keySet()) {
-                if (!DB.isWordIndexed(word))
-                {
-                    org.bson.Document doc1 = new org.bson.Document();
-                    doc1.append("url", url);
-                    wordInfo info = wordCountMap.get(word);
 
-                    doc1.append("inHead", info.inHead);
-                    doc1.append("inTitle", info.inTitle);
-                    doc1.append("count", info.count);
-                    doc1.append("tf", (float)info.count/(float) wordsCount);
-
-                    List<Document> documents = Arrays.asList(doc1);
-
-                    org.bson.Document newPage = new org.bson.Document()
-                            .append("word", word)
-                            .append("documentCount", 1)
-                            .append("documents", documents);
-                    DB.InsertWordIndexer(newPage);
-                }
-                else
-                {
-                    //Update page
-                    Document page = DB.GetIndexedWord(word);
-                    org.bson.Document doc1 = new org.bson.Document();
-                    wordInfo info = wordCountMap.get(word);
-
-                    doc1.append("url", url);
-                    doc1.append("inHead", info.inHead);
-                    doc1.append("inTitle", info.inTitle);
-                    doc1.append("count", info.count);
-                    doc1.append("tf", (float)info.count/(float) wordsCount);
-
-                    List<Document> documents = page.get("documents", List.class);
-                    Integer count = page.get("documentCount", Integer.class);
-
-                    count++;
-                    documents.add(doc1);
-                    page.put("documentCount", count);
-                    page.put("documents", documents);
-                    DB.UpdateIndexWord(word,page);
-                }
 
             }
-        }
+
         }
     }
-
+}

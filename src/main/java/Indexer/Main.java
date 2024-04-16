@@ -1,6 +1,6 @@
-import Crawler.WebCrawler;
+package Indexer;
+
 import DB.Mongo;
-import Indexer.Indexer;
 
 public class Main {
 
