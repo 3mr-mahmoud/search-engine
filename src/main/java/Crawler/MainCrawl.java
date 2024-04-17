@@ -10,7 +10,7 @@ public class MainCrawl {
         int numOfThreads = 100;
         Thread[] threads = new Thread[numOfThreads];
         for (int i = 0; i < numOfThreads; i++) {
-            threads[i] = new Thread(new WebCra(DB));
+            threads[i] = new Thread(new WebCrawler(DB));
             threads[i].setName(Integer.toString(i));
             threads[i].start();
         }
