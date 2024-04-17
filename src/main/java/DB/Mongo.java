@@ -90,6 +90,33 @@ public class Mongo {
         }
     }
 
+    public long CountCrawled() {
+        try {
+            long size = 0;
+            synchronized (this) {
+                size = crawlerCollection.countDocuments();
+            }
+            return size;
+        } catch (Exception e) {
+            System.out.println("Error in counting crawled pages " + e.getMessage());
+
+            return 0;
+        }
+    }
+
+    public long CountSeeded() {
+        try {
+            long size = 0;
+            synchronized (this) {
+                size = seedCollection.countDocuments();
+            }
+            return size;
+        } catch (Exception e) {
+            System.out.println("Error in counting seeds " + e.getMessage());
+            return 0;
+        }
+    }
+
     public String GetSeed() {
         try {
             Document doc;
@@ -108,9 +135,21 @@ public class Mongo {
     public boolean isCrawled(String hash, String URL) {
         try {
             boolean isDup1, isDup2;
+            Document found1, found2;
             synchronized (this) {
-                isDup1 = crawlerCollection.find(new Document().append("Compact", hash)).first() != null;
-                isDup2 = crawlerCollection.find(new Document().append("URL", URL)).first() != null;
+                isDup1 = (found1 = crawlerCollection.find(new Document().append("Compact", hash)).first()) != null;
+                isDup2 = (found2 = crawlerCollection.find(new Document().append("URL", URL)).first()) != null;
+                if (found2 != null) {
+                    int count = found1.getInteger("Count");
+                    Document filter = new Document("URL", URL);
+                    Document update = new Document("$set", new Document("Count", ++count));
+                    crawlerCollection.updateOne(filter, update);
+                } else if (found1 != null) {
+                    int count = found1.getInteger("Count");
+                    Document filter = new Document("Compact", hash);
+                    Document update = new Document("$set", new Document("Count", ++count));
+                    crawlerCollection.updateOne(filter, update);
+                }
             }
             return isDup1 || isDup2;
         } catch (Exception e) {

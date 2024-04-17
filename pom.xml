@@ -12,6 +12,7 @@
         <maven.compiler.target>11</maven.compiler.target>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
     </properties>
+
     <dependencies>
 
         <dependency>
@@ -51,6 +52,11 @@
             <version>1.2.3</version> <!-- Use the latest version -->
         </dependency>
 
+        <dependency>
+            <groupId>com.panforge</groupId>
+            <artifactId>robots</artifactId>
+            <version>1.4.6</version>
+        </dependency>
 
     </dependencies>
 
