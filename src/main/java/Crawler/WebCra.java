@@ -3,6 +3,7 @@ package Crawler;
 import DB.Mongo;
 
 import org.bson.Document;
+import org.jsoup.Connection;
 import org.jsoup.Jsoup;
 import org.jsoup.nodes.Element;
 import org.jsoup.select.Elements;
@@ -90,7 +91,8 @@ public class WebCra implements Runnable {
 
     private org.jsoup.nodes.Document GetDoc(String url) {
         try {
-            return Jsoup.connect(url).get();
+            Connection.Response response = Jsoup.connect(url).execute();
+            return response.parse();
         } catch (Exception e) {
             System.out.println("Error in connection URL: " + url + "by thread " + Thread.currentThread().getName() + " " + e.getMessage());
             return null;
@@ -115,11 +117,12 @@ public class WebCra implements Runnable {
     private boolean CheckRobot(String url, String userAgent) {
         try {
             URL link = new URL(url);
-            org.jsoup.nodes.Document response = Jsoup.connect(link.getProtocol() + "://" + link.getHost() + "/robots.txt").get();
-            String robotsTxtContent = response.body().text();
-            RobotsTxt robotsTxt = RobotsTxt.read(new ByteArrayInputStream(robotsTxtContent.getBytes()));
+            Connection.Response response = Jsoup.connect(link.getProtocol() + "://" + link.getHost() + "/robots.txt").execute();
+            String doc = response.body();
+            RobotsTxt robotsTxt = RobotsTxt.read(new ByteArrayInputStream(doc.getBytes()));
             return robotsTxt.query(userAgent, url);
-        } catch (Exception e) {
+        } catch (
+                Exception e) {
             System.out.println("Error in check robots of link: " + url + " " + e.getMessage());
         }
         return true;

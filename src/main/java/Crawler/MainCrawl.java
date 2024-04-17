@@ -7,7 +7,7 @@ public class MainCrawl {
         Mongo DB = new Mongo(); //create mongo data base
         DB.InitialSeed();   //insert base seeds if there is on seeds
         /*          MultiThreading                */
-        int numOfThreads = 100;
+        int numOfThreads = 16;
         Thread[] threads = new Thread[numOfThreads];
         for (int i = 0; i < numOfThreads; i++) {
             threads[i] = new Thread(new WebCra(DB));
