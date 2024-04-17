@@ -1,18 +1,21 @@
-package Crawler;
+package Indexer;
 
-import DB.*;
+import DB.Mongo;
 
-public class MainCrawl {
+public class Main {
+
+
     public static void main(String[] args) {
         Mongo DB = new Mongo(); //create mongo data base
-        DB.InitialSeed();   //insert base seeds if there is on seeds
         /*          MultiThreading                */
-        int numOfThreads = 16;
+        int numOfThreads = 10;
         Thread[] threads = new Thread[numOfThreads];
-        for (int i = 0; i < numOfThreads; i++) {
-            threads[i] = new Thread(new WebCrawler(DB));
-            threads[i].setName(Integer.toString(i));
-            threads[i].start();
+        int i = 0;
+        Indexer.currentChunkIndex = ((int) DB.Count("IndexedUrls")) - 1;
+        for (Thread ele : threads){
+            ele = new Thread(new Indexer(DB));
+            ele.setName(Integer.toString(i++));
+            ele.start();
         }
         for (Thread ele : threads) {
             try {
@@ -22,7 +25,6 @@ public class MainCrawl {
                 System.out.println("Error in finishing thread with id = " + ele.getId() + e.getMessage());
             }
         }
-
 
     }
 }

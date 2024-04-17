@@ -19,12 +19,40 @@ public class Mongo {
     private MongoCollection<Document> seedCollection;
     private MongoCollection<Document> crawlerCollection;
 
+    private MongoCollection<Document> indexerCollection;
+    private MongoCollection<Document> indexedUrlsCollection;
+
     public Mongo() {
         ConnectionString connectionString = new ConnectionString("mongodb://localhost:27018");
         client = MongoClients.create(connectionString);
         DB = client.getDatabase("Engine");
         seedCollection = DB.getCollection("Seeds");
         crawlerCollection = DB.getCollection("Crawler");
+        indexerCollection = DB.getCollection("Indexer");
+        indexedUrlsCollection = DB.getCollection("IndexedUrls");
+    }
+
+    public boolean isIndexed(String URL) {
+        try {
+            boolean isDup;
+            synchronized (this) {
+                isDup = indexedUrlsCollection.find(new Document().append("URL", URL)).first() != null;
+            }
+            return isDup;
+        } catch (Exception e) {
+            System.out.println("Error in checking existance the content of page " + e.getMessage());
+            return true;
+        }
+    }
+
+    public void insertIndexedUrl(String Url) {
+        try {
+            synchronized (this) {
+                indexedUrlsCollection.insertOne(new Document().append("URL", Url));
+            }
+        } catch (Exception e) {
+            System.out.println("Error in inserting new crawled page " + e.getMessage());
+        }
     }
 
     public void InitialSeed() {
@@ -45,6 +73,23 @@ public class Mongo {
         }
     }
 
+    public MongoCollection<Document> getCollection(String collectionName) {
+        return DB.getCollection(collectionName);
+    }
+
+    public long Count(String collectionName) {
+        try {
+            long size = 0;
+            synchronized (this) {
+                size = DB.getCollection(collectionName).countDocuments();
+            }
+            return size;
+        } catch (Exception e) {
+            System.out.println("Error in counting " + collectionName + " documents " + e.getMessage());
+            return 0;
+        }
+    }
+
     public long CountCrawled() {
         try {
             long size = 0;
@@ -54,6 +99,7 @@ public class Mongo {
             return size;
         } catch (Exception e) {
             System.out.println("Error in counting crawled pages " + e.getMessage());
+
             return 0;
         }
     }
@@ -87,7 +133,6 @@ public class Mongo {
     }
 
     public boolean isCrawled(String hash, String URL) {
-        //check if the page is duplicated and update the counter if found
         try {
             boolean isDup1, isDup2;
             Document found1, found2;
@@ -131,6 +176,44 @@ public class Mongo {
             }
         } catch (Exception e) {
             System.out.println("Error in inserting new crawled page " + e.getMessage());
+        }
+    }
+
+    public boolean isWordIndexed(String word) {
+        try {
+            boolean isDup;
+            synchronized (this) {
+                isDup = indexerCollection.find(new Document().append("word", word)).first() != null;
+            }
+            return isDup;
+        } catch (Exception e) {
+            System.out.println("Error in checking existance the content of page " + e.getMessage());
+            return true;
+        }
+    }
+
+    public void InsertWordIndexer(org.bson.Document doc) {
+        try {
+            synchronized (this) {
+                indexerCollection.insertOne(doc);
+            }
+        } catch (Exception e) {
+            System.out.println("Error in inserting new indexer page " + e.getMessage());
+        }
+    }
+
+    public Document GetIndexedWord(String word) {
+        return indexerCollection.find(new Document().append("word", word)).first();
+    }
+
+    public void UpdateIndexWord(String word, Document doc) {
+        try {
+            synchronized (this) {
+                indexerCollection.findOneAndDelete(new Document().append("word", word));
+                InsertWordIndexer(doc);
+            }
+        } catch (Exception e) {
+            System.out.println("Error in inserting new indexer page " + e.getMessage());
         }
     }
 
