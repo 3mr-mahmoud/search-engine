@@ -1,4 +1,4 @@
-package Phrase_Searching;
+package Searching;
 
 import java.util.ArrayList;
 import java.util.Scanner;
@@ -16,7 +16,6 @@ import javax.swing.text.Document;
             
             ArrayList<org.bson.Document> results = new ArrayList<>();
            
-         //  if(isEnclosedInQuotes(query)){
             queryProcessor processor = new queryProcessor(query);
     
             // Search for the query
@@ -26,22 +25,18 @@ import javax.swing.text.Document;
             
             if(results.isEmpty()){
                 System.out.println("nooooooooooooooooo");
-
             }else{
-            // Display the results
-            System.out.println("Search results for query: \"" + query + "\":");
-          
+                // Display the results
+                System.out.println("Search results for query: \"" + query + "\":");
+            }
         }
-        }
-        
             public static void printDocumentExample(ArrayList<org.bson.Document> results) {
                 for(org.bson.Document result:results){
                 System.out.println("Example Document:");
                 System.out.println("URL: " + ((org.bson.Document) result).getString("url"));
                 System.out.println("In Head: " + ((org.bson.Document) result).getBoolean("inHead"));
                 System.out.println("In Title: " + ((org.bson.Document) result).getBoolean("inTitle"));
-              //  System.out.println("Count: " + ((org.bson.Document) result).getInteger("count"));
-            }}
-            
-        
+                System.out.println("idf-tf " + ((org.bson.Document) result).getDouble("idf-tf"));
+            }
+        }
     }

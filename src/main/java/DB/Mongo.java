@@ -223,7 +223,6 @@ public class Mongo {
     }
     public ArrayList<Document> getDocumentsContainingWord(String word, String collectionName) {
         ArrayList<Document> documents = new ArrayList<>();
-    
         try {
             synchronized (this) {
                 FindIterable<Document> iterable = DB.getCollection(collectionName).find(new Document("word", word));
