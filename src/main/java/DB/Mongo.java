@@ -7,6 +7,7 @@ import org.bson.Document;
 import java.io.BufferedReader;
 import java.io.FileReader;
 import java.io.IOException;
+import java.util.ArrayList;
 import java.util.Vector;
 import com.mongodb.client.model.Projections;
 
@@ -118,6 +119,10 @@ public class Mongo {
             return 0;
         }
     }
+    // Inside your Mongo class
+    // Other methods...
+
+    
 
     public String GetSeed() {
         try {
@@ -230,6 +235,19 @@ public class Mongo {
             System.out.println("Error in inserting new indexer page " + e.getMessage());
         }
     }
+    public ArrayList<Document> getDocumentsContainingWord(String word, String collectionName) {
+        ArrayList<Document> documents = new ArrayList<>();
+        try {
+            synchronized (this) {
+                FindIterable<Document> iterable = DB.getCollection(collectionName).find(new Document("word", word));
+                iterable.forEach(documents::add);
+            }
+        } catch (Exception e) {
+            System.out.println("Error in retrieving documents containing the word " + word + " from collection " + collectionName + ": " + e.getMessage());
+        }
+        return documents;
+    }
+    
 
     public Document findDocumentInCrawler(int id) {
         return crawlerCollection.find(new Document().append("_id", id)).first();
