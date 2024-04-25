@@ -122,7 +122,7 @@ public class Indexer implements Runnable {
                         doc1.append("inTitle", info.inTitle);
                         doc1.append("count", info.count);
                         doc1.append("tf", (float) info.count / (float) wordsCount);
-
+                        doc1.append("rank",doc.getDouble("rank"));
                         // Extract statements where the word appears
                         Elements statementElements = pageDoc.getElementsContainingOwnText(word);
                         List<Document> statements = extractStatements(statementElements);
@@ -136,6 +136,7 @@ public class Indexer implements Runnable {
                                 .append("documentCount", 1)
                                 .append("documents", documents);
                         DB.InsertWordIndexer(newPage);
+
                     } else {
                         // Update page
                         Document page = DB.GetIndexedWord(word);
@@ -147,7 +148,7 @@ public class Indexer implements Runnable {
                         doc1.append("inTitle", info.inTitle);
                         doc1.append("count", info.count);
                         doc1.append("tf", (float) info.count / (float) wordsCount);
-
+                        doc1.append("rank",doc.getDouble("rank"));
                         // Extract statements where the word appears
                         Elements statementElements = pageDoc.getElementsContainingOwnText(word);
                         List<Document> statements = extractStatements(statementElements);
