@@ -12,6 +12,10 @@ import java.io.ByteArrayInputStream;
 import java.net.URL;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.List;
+import java.util.Vector;
 
 import com.panforge.robotstxt.RobotsTxt;
 
@@ -61,27 +65,37 @@ public class WebCrawler implements Runnable {
                 String body = doc.body().text().toString();    //convert text of body html element to string for compacting
                 String hash = CompactSt(body);
                 if (!DB.isCrawled(hash, seed)) {
+                    Elements links = doc.select("a[href]");
+                    Vector<String> listLink = new Vector<String>();
+                    if (!stopSearch) {
+                        for (Element link : links) {
+                            String URL = link.absUrl("href");
+                            String linkNormal = URL.split("[?#]")[0];
+                            if (CheckRobot(linkNormal, "*"))
+                            {
+                                if(!linkNormal.equals(seed))
+                                {
+                                    listLink.add(linkNormal);
+                                    DB.InsertSeed(new Document("URL", linkNormal));
+                                }
+                            }
+                            if (stopSearch)
+                                break;
+                        }
+                    }
                     DateTimeFormatter formatter = DateTimeFormatter.ofPattern("MM-dd HH:mm:ss");
                     org.bson.Document newPage = new org.bson.Document()
                             .append("Page", doc.toString())
                             .append("URL", seed)
                             .append("Compact", hash)
                             .append("CrawlTime", LocalDateTime.now().format(formatter).toString())
-                            .append("Count", 1);
+                            .append("Count", 1)
+                            .append("rank", 0)
+                            .append("links", listLink);
                     if (done)
                         return;
                     DB.InsertPage(newPage);
-                    if (!stopSearch) {
-                        Elements links = doc.select("a[href]");
-                        for (Element link : links) {
-                            String URL = link.absUrl("href");
-                            String linkNormal = URL.split("[?#]")[0];
-                            if (CheckRobot(linkNormal, "*"))
-                                DB.InsertSeed(new Document("URL", linkNormal));
-                            if (stopSearch)
-                                break;
-                        }
-                    }
+
                 }
             }
             if (done)

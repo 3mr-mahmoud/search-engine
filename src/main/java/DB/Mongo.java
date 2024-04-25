@@ -4,14 +4,15 @@ import com.mongodb.ConnectionString;
 import com.mongodb.client.*;
 import org.bson.Document;
 
-import javax.print.Doc;
 import java.io.BufferedReader;
 import java.io.FileReader;
 import java.io.IOException;
 import java.util.Vector;
+import com.mongodb.client.model.Projections;
+
 
 public class Mongo {
-    public final int MORE_PAGES = 15000;
+    public final int MORE_PAGES = 20000;
     public final int MAX_PAGES = 6000;
     private Integer id = new Integer(0);
     private MongoClient client;
@@ -21,15 +22,17 @@ public class Mongo {
 
     private MongoCollection<Document> indexerCollection;
     private MongoCollection<Document> indexedUrlsCollection;
+    private MongoCollection<Document> pageRankCollection;
 
     public Mongo() {
-        ConnectionString connectionString = new ConnectionString("mongodb://localhost:27018");
+        ConnectionString connectionString = new ConnectionString("mongodb://localhost:27017");
         client = MongoClients.create(connectionString);
         DB = client.getDatabase("Engine");
         seedCollection = DB.getCollection("Seeds");
         crawlerCollection = DB.getCollection("Crawler");
         indexerCollection = DB.getCollection("Indexer");
         indexedUrlsCollection = DB.getCollection("IndexedUrls");
+        pageRankCollection = DB.getCollection("PageRank");
     }
 
     public boolean isIndexed(String URL) {
@@ -217,4 +220,29 @@ public class Mongo {
         }
     }
 
+    public Document findDocumentInCrawler(int id)
+    {
+        return crawlerCollection.find(new Document().append("_id", id)).first();
+    }
+
+    public FindIterable<Document> findDocumentsWithFilter(Document filter, String... keys) {
+        return crawlerCollection.find(filter).projection(Projections.include(keys));
+    }
+
+    public void InitializeRank()
+    {
+        Document filter = new Document();
+        // Define the update operation
+        Document update = new Document("$set", new Document("rank",  1.0/CountCrawled()));
+        // Update multiple documents that match the filter criteria
+        crawlerCollection.updateMany(filter, update);
+    }
+    public void updateRank(int id, Double rank)
+    {
+        Document filter = new Document("_id", id);
+        // Define the update operation
+        Document update = new Document("$set", new Document("rank",  rank));
+        // Update multiple documents that match the filter criteria
+        crawlerCollection.updateOne(filter, update);
+    }
 }
