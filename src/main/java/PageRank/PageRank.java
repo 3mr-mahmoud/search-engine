@@ -53,7 +53,7 @@ public class PageRank {
             String URL = doc.getString("URL");
             double rank = 0;
             for (Document page : crawledDocs) {
-                if (page.getInteger("_id") == doc.getInteger("_id"))
+                if (page.getString("URL").equals(URL))
                     continue;
                 // System.out.println(page.toJson());
                 if (page.getList("links", String.class).contains(URL))

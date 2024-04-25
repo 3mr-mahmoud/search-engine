@@ -54,6 +54,10 @@ public class WebCrawler implements Runnable {
                         stopSearch = true;
                     }
                     seed = DB.GetSeed();
+                    if (seed.endsWith("/")) {
+                        seed = seed.substring(0, seed.length() - 1);
+                    }
+
                 }
             }
 
