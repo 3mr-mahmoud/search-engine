@@ -10,7 +10,6 @@ import java.io.IOException;
 import java.util.Vector;
 import com.mongodb.client.model.Projections;
 
-
 public class Mongo {
     public final int MORE_PAGES = 20000;
     public final int MAX_PAGES = 6000;
@@ -25,7 +24,7 @@ public class Mongo {
     private MongoCollection<Document> pageRankCollection;
 
     public Mongo() {
-        ConnectionString connectionString = new ConnectionString("mongodb://localhost:27017");
+        ConnectionString connectionString = new ConnectionString("mongodb://localhost:27018");
         client = MongoClients.create(connectionString);
         DB = client.getDatabase("Engine");
         seedCollection = DB.getCollection("Seeds");
@@ -142,12 +141,12 @@ public class Mongo {
             synchronized (this) {
                 isDup1 = (found1 = crawlerCollection.find(new Document().append("Compact", hash)).first()) != null;
                 isDup2 = (found2 = crawlerCollection.find(new Document().append("URL", URL)).first()) != null;
-                if (found2 != null) {
-                    int count = found1.getInteger("Count");
+                if (isDup2) {
+                    int count = found2.getInteger("Count");
                     Document filter = new Document("URL", URL);
                     Document update = new Document("$set", new Document("Count", ++count));
                     crawlerCollection.updateOne(filter, update);
-                } else if (found1 != null) {
+                } else if (isDup1) {
                     int count = found1.getInteger("Count");
                     Document filter = new Document("Compact", hash);
                     Document update = new Document("$set", new Document("Count", ++count));
@@ -168,6 +167,18 @@ public class Mongo {
             }
         } catch (Exception e) {
             System.out.println("Error in inserting new crawled page " + e.getMessage());
+        }
+    }
+
+    public void updateLinks(String URL, Vector<String> links) {
+        try {
+            synchronized (this) {
+                Document filter = new Document("URL", URL);
+                Document update = new Document("$set", new Document("links", links));
+                crawlerCollection.updateOne(filter, update);
+            }
+        } catch (Exception e) {
+            System.out.println("Error in updating links of page " + e.getMessage());
         }
     }
 
@@ -220,8 +231,7 @@ public class Mongo {
         }
     }
 
-    public Document findDocumentInCrawler(int id)
-    {
+    public Document findDocumentInCrawler(int id) {
         return crawlerCollection.find(new Document().append("_id", id)).first();
     }
 
@@ -229,19 +239,18 @@ public class Mongo {
         return crawlerCollection.find(filter).projection(Projections.include(keys));
     }
 
-    public void InitializeRank()
-    {
+    public void InitializeRank() {
         Document filter = new Document();
         // Define the update operation
-        Document update = new Document("$set", new Document("rank",  1.0/CountCrawled()));
+        Document update = new Document("$set", new Document("rank", 1.0 / CountCrawled()));
         // Update multiple documents that match the filter criteria
         crawlerCollection.updateMany(filter, update);
     }
-    public void updateRank(int id, Double rank)
-    {
+
+    public void updateRank(int id, Double rank) {
         Document filter = new Document("_id", id);
         // Define the update operation
-        Document update = new Document("$set", new Document("rank",  rank));
+        Document update = new Document("$set", new Document("rank", rank));
         // Update multiple documents that match the filter criteria
         crawlerCollection.updateOne(filter, update);
     }
