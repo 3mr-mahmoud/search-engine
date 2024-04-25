@@ -8,29 +8,14 @@ import org.jsoup.nodes.Element;
 import org.jsoup.select.Elements;
 import DB.Mongo;
 import java.time.LocalDateTime;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 
 public class Indexer implements Runnable {
 
-    /*
-     * todo
-     * 1. fetch pages from crawler collection
-     * 2. loop on each document and get every word
-     * 3. Parse stopWords.txt to ignore some words
-     * 4. Get document words
-     * 4.0 stem each word
-     * 4.1 make a hash map and add every unique word to it <word ,
-     * countOfOccurences>
-     * 4.2 count all words
-     * 4.3 update the indexed documents count
-     * 4.4 update the word document frequency
-     * 5.
-     */
-
     private Mongo DB;
-
     private int indexedUrls;
     public static int currentChunkIndex;
 
@@ -50,10 +35,7 @@ public class Indexer implements Runnable {
     public void index() {
         int localChunkIndex = -1;
 
-
-
         while (DB.Count("IndexedUrls") < DB.Count("Crawler")) {
-
             synchronized (DB) {
                 currentChunkIndex++;
                 localChunkIndex = currentChunkIndex;
@@ -141,6 +123,12 @@ public class Indexer implements Runnable {
                         doc1.append("count", info.count);
                         doc1.append("tf", (float) info.count / (float) wordsCount);
 
+                        // Extract statements where the word appears
+                        Elements statementElements = pageDoc.getElementsContainingOwnText(word);
+                        List<Document> statements = extractStatements(statementElements);
+
+                        doc1.append("statements", statements);
+
                         List<Document> documents = Arrays.asList(doc1);
 
                         org.bson.Document newPage = new org.bson.Document()
@@ -160,6 +148,12 @@ public class Indexer implements Runnable {
                         doc1.append("count", info.count);
                         doc1.append("tf", (float) info.count / (float) wordsCount);
 
+                        // Extract statements where the word appears
+                        Elements statementElements = pageDoc.getElementsContainingOwnText(word);
+                        List<Document> statements = extractStatements(statementElements);
+
+                        doc1.append("statements", statements);
+
                         List<Document> documents = page.get("documents", List.class);
                         Integer count = page.get("documentCount", Integer.class);
 
@@ -171,10 +165,19 @@ public class Indexer implements Runnable {
                     }
 
                 }
-
-
             }
 
         }
+    }
+
+    // Function to extract statements where a word appears
+    private List<Document> extractStatements(Elements statementElements) {
+        List<Document> statements = new ArrayList<>();
+        for (Element statementElement : statementElements) {
+            String statementText = statementElement.ownText();
+            Document statementDoc = new Document("state", statementText);
+            statements.add(statementDoc);
+        }
+        return statements;
     }
 }
