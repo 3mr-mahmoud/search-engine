@@ -8,18 +8,15 @@ import javax.swing.text.Document;
     public class pcessesquery {
         public static void main(String[] args) {
             // Create a query processor
-
+            while(true){
             Scanner scanner = new Scanner(System.in); // Create a Scanner object
         
-           System.out.print("Enter your text search: ");
+            System.out.print("Enter your text search: ");
             String query = scanner.nextLine(); // Read user input as a string
-            
             ArrayList<org.bson.Document> results = new ArrayList<>();
-           
             queryProcessor processor = new queryProcessor(query);
-    
             // Search for the query
-            results = processor.searchly();
+          results = processor.searchly();
            
             printDocumentExample(results);
             
@@ -29,6 +26,8 @@ import javax.swing.text.Document;
                 // Display the results
                 System.out.println("Search results for query: \"" + query + "\":");
             }
+            }
+
         }
             public static void printDocumentExample(ArrayList<org.bson.Document> results) {
                 for(org.bson.Document result:results){
@@ -37,6 +36,7 @@ import javax.swing.text.Document;
                 System.out.println("In Head: " + ((org.bson.Document) result).getBoolean("inHead"));
                 System.out.println("In Title: " + ((org.bson.Document) result).getBoolean("inTitle"));
                 System.out.println("idf-tf " + ((org.bson.Document) result).getDouble("idf-tf"));
+                System.out.println("rank: " + ((org.bson.Document) result).getDouble("rank"));
             }
         }
     }
