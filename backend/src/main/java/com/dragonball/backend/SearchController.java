@@ -9,13 +9,13 @@ import javax.management.Query;
 import java.util.ArrayList;
 import java.util.List;
 
-@CrossOrigin(origins = "localhost:5173")
+@CrossOrigin(origins = "http://localhost:5173")
 @RestController
 
 @RequestMapping("/api")
 public class SearchController {
 
-    private static final int PER_PAGE = 1;
+    private static final int PER_PAGE = 10;
     @Autowired
     private QueryProcessor queryProcessor;
 
@@ -25,13 +25,25 @@ public class SearchController {
     @GetMapping("/search")
     public ResponseEntity<PaginatedIndexerDocument> search(@RequestParam String keyword,
             @RequestParam(name = "page", defaultValue = "1") int page) {
+
+        long startTime = System.nanoTime();
+
+        // Call your function here
         List<IndexerDocument> results = queryProcessor.searchly(keyword);
+
+        long endTime = System.nanoTime();
+
+        // Calculate elapsed time in seconds
+        double elapsedTimeInSeconds = (endTime - startTime) / 1_000_000_000.0;
+
+
 
         searchHistoryService.saveKeyword(keyword);
 
         PaginatedIndexerDocument paginatedIndexerDocument = new PaginatedIndexerDocument();
         paginatedIndexerDocument.setPagesAvailable((int) Math.ceil((double) results.size() / (double) PER_PAGE));
         paginatedIndexerDocument.setTotal(results.size());
+        paginatedIndexerDocument.setElapsedTime(elapsedTimeInSeconds);
         paginatedIndexerDocument.setCurrentPage(page);
         int startIndex = (page - 1) * PER_PAGE;
         int endIndex = Math.min(startIndex + PER_PAGE, results.size());

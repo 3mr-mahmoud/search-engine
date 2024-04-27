@@ -19,4 +19,5 @@ public class IndexerDocument {
     private  Integer count;
     private Double tfIdf;
     private String title;
+    private String description;
 }

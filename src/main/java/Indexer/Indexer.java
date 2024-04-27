@@ -124,6 +124,16 @@ public class Indexer implements Runnable {
                         doc1.append("tf", (float) info.count / (float) wordsCount);
                         doc1.append("rank", doc.getDouble("rank"));
                         doc1.append("title", pageDoc.title());
+                        Elements metaDescriptions = pageDoc.select("meta[name=description], meta[property=og:description]");
+
+                        for (Element metaDescription : metaDescriptions) {
+                            // Get the content attribute value
+                            String descriptionContent = metaDescription.attr("content");
+                            if(!descriptionContent.isEmpty()) {
+                                doc1.append("description", descriptionContent);
+                                break;
+                            }
+                        }
                         // Extract statements where the word appears
                         Elements statementElements = pageDoc.getElementsContainingOwnText(word);
                         List<String> statements = extractStatements(statementElements);
@@ -147,10 +157,22 @@ public class Indexer implements Runnable {
                         doc1.append("url", url);
                         doc1.append("inHead", info.inHead);
                         doc1.append("inTitle", info.inTitle);
+
                         doc1.append("count", info.count);
                         doc1.append("tf", (float) info.count / (float) wordsCount);
                         doc1.append("rank", doc.getDouble("rank"));
                         doc1.append("title", pageDoc.title());
+
+                        Elements metaDescriptions = pageDoc.select("meta[name=description], meta[property=og:description]");
+
+                        for (Element metaDescription : metaDescriptions) {
+                            // Get the content attribute value
+                            String descriptionContent = metaDescription.attr("content");
+                            if(!descriptionContent.isEmpty()) {
+                                doc1.append("description", descriptionContent);
+                                break;
+                            }
+                        }
                         // Extract statements where the word appears
                         Elements statementElements = pageDoc.getElementsContainingOwnText(word);
                         List<String> statements = extractStatements(statementElements);
@@ -178,7 +200,7 @@ public class Indexer implements Runnable {
         List<String> statements = new ArrayList<>();
         for (Element statementElement : statementElements) {
             String text = statementElement.ownText();
-            if (text.length() > 50)
+            if (text.length() > 10)
                 statements.add(text);
         }
         return statements;
