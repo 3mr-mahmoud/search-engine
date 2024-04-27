@@ -18,9 +18,6 @@ export default {
         results: [],
       },
       suggestions: [
-        "test",
-        "test2",
-        "test3",
       ],
     };
   },
@@ -162,10 +159,12 @@ export default {
                 autocomplete="off" />
               <div class="suggestions absolute z-20 w-full" @mouseover="onSuggestions = true"
                 @mouseout="onSuggestions = false" v-if="suggestions.length > 0 && searchFocused && search !== ''">
-                <ul class="absolute w-full bg-white border border-gray-300 rounded-lg mt-1">
+                <ul
+                  class="absolute w-full bg-white dark:bg-gray-700 dark:border-gray-800 dark:text-white  border border-gray-300 rounded-lg mt-1">
                   <li v-for="(suggestion, index) in suggestions" :key="index"
-                    class="p-2.5 hover:bg-gray-50 rounded-lg cursor-pointer" @click="searchSuggestion(suggestion)">{{
-                      suggestion
+                    class="p-2.5 hover:bg-gray-50 dark:hover:bg-gray-600 rounded-lg cursor-pointer"
+                    @click="searchSuggestion(suggestion.keyword)">{{
+                      suggestion.keyword
                     }}</li>
                 </ul>
               </div>
@@ -197,15 +196,17 @@ export default {
       </div>
     </div>
 
-    <div class="max-w-6xl mx-auto px-10 " v-if="haveResults && resultsCollection.results.length > 0">
+    <div class="max-w-6xl mx-auto px-10" v-if="haveResults && resultsCollection.results.length > 0">
       <div class="flex flex-col gap-4 mt-4">
         <h2 class="text-base font-light text-gray-600 dark:text-gray-100">About {{ resultsCollection.total }}
-          Results</h2>
+          Results ({{ parseFloat(resultsCollection.elapsedTime).toFixed(3) }} seconds) </h2>
         <div class="flex flex-col gap-2" v-for="(result, index) in resultsCollection.results" :key="index">
           <a class="hover:underline font-bold text-yellow-1000 visited:text-red-1000 text-2xl" :href="result.url">{{
-            result.url
+            result.title
           }}</a>
-          <p class="text-gray-600">{{ result.statements[0] }}</p>
+          <p class="text-gray-600 dark:text-gray-300"
+            v-html="result.statements.length > 0 ? result.statements[0] : result.description">
+          </p>
         </div>
 
         <div class="flex w-100 justify-center">
@@ -213,6 +214,13 @@ export default {
         </div>
       </div>
     </div>
+
+    <div class="max-w-6xl mx-auto px-10" v-if="haveResults && resultsCollection.results.length == 0">
+      <div class="flex flex-col gap-4 mt-6">
+        <h2 class="text-2xl font-light text-gray-600 dark:text-gray-100">No Results Found </h2>
+      </div>
+    </div>
+
   </div>
 </template>
 

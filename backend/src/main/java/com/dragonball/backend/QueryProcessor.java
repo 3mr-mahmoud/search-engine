@@ -47,7 +47,7 @@ public class QueryProcessor {
                             boolean containsAllWords = false; // Initialize flag for each document
                             for (String statement : statements) {
                                 // Check if all words in the query are present in the statement
-                                if (statement.contains(ifQuotes)) {
+                                if (statement.toLowerCase().contains(ifQuotes.toLowerCase())) {
                                     statement = highlight(statement, ifQuotes);
                                     newStatements.add(statement);
                                     containsAllWords = true;

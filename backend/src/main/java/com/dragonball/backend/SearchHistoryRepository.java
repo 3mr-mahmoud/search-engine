@@ -10,11 +10,11 @@ import java.util.List;
 public interface SearchHistoryRepository extends MongoRepository<SearchHistory, String> {
 
     // Custom query method to check if a keyword exists
-    boolean existsByKeyword(String keyword);
+    boolean existsByKeywordIgnoreCase(String keyword);
 
     // Custom query method to find distinct keywords starting with a partial string (case-insensitive)
     @Query(fields = "{ 'keyword' : 1 ,'count': 1}")
     List<SearchHistory> findDistinctByKeywordStartingWithIgnoreCaseOrderByCountDesc(String partialString);
 
-    SearchHistory findFirstByKeyword(String keyword);
+    SearchHistory findFirstByKeywordIgnoreCase(String keyword);
 }

@@ -12,12 +12,12 @@ public class SearchHistoryService {
     private SearchHistoryRepository searchHistoryRepository;
 
     public void saveKeyword(String keyword) {
-        if (!searchHistoryRepository.existsByKeyword(keyword)) {
+        if (!searchHistoryRepository.existsByKeywordIgnoreCase(keyword)) {
             SearchHistory searchHistory = new SearchHistory();
             searchHistory.setKeyword(keyword);
             searchHistoryRepository.save(searchHistory);
         } else {
-            SearchHistory s = searchHistoryRepository.findFirstByKeyword(keyword);
+            SearchHistory s = searchHistoryRepository.findFirstByKeywordIgnoreCase(keyword);
             s.setCount(s.getCount() + 1);
             searchHistoryRepository.save(s);
         }
