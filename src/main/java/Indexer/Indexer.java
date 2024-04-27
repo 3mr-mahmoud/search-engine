@@ -125,7 +125,7 @@ public class Indexer implements Runnable {
                         doc1.append("rank",doc.getDouble("rank"));
                         // Extract statements where the word appears
                         Elements statementElements = pageDoc.getElementsContainingOwnText(word);
-                        List<Document> statements = extractStatements(statementElements);
+                        List<String> statements = extractStatements(statementElements);
 
                         doc1.append("statements", statements);
 
@@ -151,7 +151,7 @@ public class Indexer implements Runnable {
                         doc1.append("rank",doc.getDouble("rank"));
                         // Extract statements where the word appears
                         Elements statementElements = pageDoc.getElementsContainingOwnText(word);
-                        List<Document> statements = extractStatements(statementElements);
+                        List<String> statements = extractStatements(statementElements);
 
                         doc1.append("statements", statements);
 
@@ -172,12 +172,10 @@ public class Indexer implements Runnable {
     }
 
     // Function to extract statements where a word appears
-    private List<Document> extractStatements(Elements statementElements) {
-        List<Document> statements = new ArrayList<>();
+    private List<String> extractStatements(Elements statementElements) {
+        List<String> statements = new ArrayList<>();
         for (Element statementElement : statementElements) {
-            String statementText = statementElement.ownText();
-            Document statementDoc = new Document("state", statementText);
-            statements.add(statementDoc);
+            statements.add(statementElement.ownText());
         }
         return statements;
     }
