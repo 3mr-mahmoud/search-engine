@@ -1,31 +1,26 @@
 <script>
+import apiClient from './apiClient';
+import pagination from './components/pagination.vue';
 export default {
+  components: { pagination },
   data() {
     return {
       loading: false,
       isDark: false,
       haveResults: false,
       searchFocused: false,
+      lastSearch: '',
       search: '',
-      results: [
-        {
-          title: 'Dragon Ball Z: Kakarot',
-          description: 'Relive the story of Goku and other Z Fighters in DRAGON BALL Z: KAKAROT! Beyond the epic battles, experience life in the DRAGON BALL Z world as you fight, fish, eat, and train with Goku, Gohan, Vegeta and others.',
-          image: 'https://cdn.cloudflare.steamstatic.com/steam/apps/851850/header.jpg?t=1610633667',
-          link: 'https://store.steampowered.com/app/851850/DRAGON_BALL_Z_KAKAROT/',
-        },
-        {
-          title: 'Dragon Ball FighterZ',
-          description: 'DRAGON BALL FighterZ is born from what makes the DRAGON BALL series so loved and famous: endless spectacular fights with its all-powerful fighters.',
-          image: 'https://cdn.cloudflare.steamstatic.com/steam/apps/678950/header.jpg?t=1610633667',
-          link: 'https://store.steampowered.com/app/678950/DRAGON_BALL_FighterZ/',
-        },
-        {
-          title: 'DRAGON BALL XENOVERSE 2',
-          description: 'DRAGON BALL XENOVERSE 2 builds upon the highly popular DRAGON BALL XENOVERSE with enhanced graphics that will further immerse players into the largest and most detailed Dragon Ball world ever developed.',
-          image: 'https://cdn.cloudflare.steamstatic.com/steam/apps/454650/header.jpg?t=1610633667',
-          link: 'https://store.steampowered.com/app/454650/DRAGON_BALL_XENOVERSE_2/',
-        }
+      onSuggestions: false,
+      showSuggestions: false,
+      page: 1,
+      resultsCollection: {
+        results: [],
+      },
+      suggestions: [
+        "test",
+        "test2",
+        "test3",
       ],
     };
   },
@@ -33,23 +28,70 @@ export default {
     this.applyTheme();
   },
   methods: {
+    searchSuggestion(suggestion) {
+      this.search = suggestion;
+      this.page = 1;
+      this.onSuggestions = false;
+      this.searchFocused = false;
+      this.searchHandler();
+    },
     reset() {
       this.search = '';
+      this.page = 1;
       this.haveResults = false;
     },
-    simulateSearch() {
+    handlePageChange(page) {
+      this.page = page;
+      this.searchHandler();
+    },
+    searchHandler() {
       this.loading = true;
-
-
-      setTimeout(() => {
+      if (this.lastSearch !== this.search) {
+        this.page = 1;
+        this.lastSearch = this.search;
+      }
+      apiClient.get('/search', {
+        params: {
+          keyword: this.search,
+          page: this.page
+        }
+      }).then(response => {
         this.loading = false;
+        this.resultsCollection = response.data;
         this.haveResults = true;
-      }, 5000);
+      }).catch(error => {
+        console.error('Error searching', error);
+      });
+    },
+    getSuggestions() {
+      apiClient.get('/suggestions', {
+        params: {
+          keyword: this.search
+        }
+      }).then(response => {
+        this.suggestions = response.data;
+      }).catch(error => {
+        console.error('Error searching', error);
+      });
+    },
+    simulateSearch() {
+      // this.loading = true;
 
+
+      // setTimeout(() => {
+      //   this.loading = false;
+      //   this.haveResults = true;
+      // }, 5000);
+      this.searchHandler();
     },
     toggleTheme() {
       this.isDark = !this.isDark;
       this.applyTheme();
+    },
+    removeSearchFocus() {
+      if (!this.onSuggestions) {
+        this.searchFocused = false;
+      }
     },
     applyTheme() {
       const element = document.querySelector('html')
@@ -60,6 +102,11 @@ export default {
       }
     }
 
+  },
+  watch: {
+    search() {
+      this.getSuggestions();
+    }
   }
 }
 </script>
@@ -108,18 +155,30 @@ export default {
                   d="M323.6 51.2c-20.8 19.3-39.6 39.6-56.2 60C240.1 73.6 206.3 35.5 168 0 69.7 91.2 0 210 0 281.6 0 408.9 100.3 512 224 512s224-103.2 224-230.4c0-53.3-52-163.1-124.4-230.4zm-19.5 340.7C282.4 407 255.7 416 226.9 416 154.7 416 96 368.3 96 290.8c0-38.6 24.3-72.6 72.8-130.8 6.9 8 98.8 125.3 98.8 125.3l58.6-66.9c4.1 6.9 7.9 13.6 11.3 20 27.4 52.2 15.8 119-33.4 153.4z" />
               </svg>
             </div>
-            <input type="text" id="voice-search"
-              class="bg-gray-50 border border-gray-300 focus:outline-none text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-gray-500 block w-full ps-10 p-2.5  dark:bg-gray-700 dark:border-gray-600 dark:placeholder-gray-400 dark:text-white dark:focus:ring-gray-500 dark:focus:border-gray-500"
-              placeholder="Search Games, Coding..." @focus="searchFocused = true" @blur="searchFocused = false" />
-            <button v-if="haveResults" type="button" @click="reset"
-              class="absolute inset-y-0 end-0 flex items-center pe-3">
-              <svg aria-hidden="true" xmlns="http://www.w3.org/2000/svg"
-                class="w-4 h-4 text-gray-500 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white"
-                viewBox="0 0 352 512" fill="currentColor">
-                <path
-                  d="M242.7 256l100.1-100.1c12.3-12.3 12.3-32.2 0-44.5l-22.2-22.2c-12.3-12.3-32.2-12.3-44.5 0L176 189.3 75.9 89.2c-12.3-12.3-32.2-12.3-44.5 0L9.2 111.5c-12.3 12.3-12.3 32.2 0 44.5L109.3 256 9.2 356.1c-12.3 12.3-12.3 32.2 0 44.5l22.2 22.2c12.3 12.3 32.2 12.3 44.5 0L176 322.7l100.1 100.1c12.3 12.3 32.2 12.3 44.5 0l22.2-22.2c12.3-12.3 12.3-32.2 0-44.5L242.7 256z" />
-              </svg>
-            </button>
+            <form @submit.prevent="simulateSearch">
+              <input type="text" id="voice-search" v-model="search"
+                class="bg-white border border-gray-300 focus:outline-none text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-gray-500 block w-full ps-10 p-2.5  dark:bg-gray-700 dark:border-gray-600 dark:placeholder-gray-400 dark:text-white dark:focus:ring-gray-500 dark:focus:border-gray-500"
+                placeholder="Search Games, Coding..." @focus="searchFocused = true" @blur="removeSearchFocus"
+                autocomplete="off" />
+              <div class="suggestions absolute z-20 w-full" @mouseover="onSuggestions = true"
+                @mouseout="onSuggestions = false" v-if="suggestions.length > 0 && searchFocused && search !== ''">
+                <ul class="absolute w-full bg-white border border-gray-300 rounded-lg mt-1">
+                  <li v-for="(suggestion, index) in suggestions" :key="index"
+                    class="p-2.5 hover:bg-gray-50 rounded-lg cursor-pointer" @click="searchSuggestion(suggestion)">{{
+                      suggestion
+                    }}</li>
+                </ul>
+              </div>
+              <button v-if="haveResults" type="button" @click="reset"
+                class="absolute inset-y-0 end-0 flex items-center pe-3">
+                <svg aria-hidden="true" xmlns="http://www.w3.org/2000/svg"
+                  class="w-4 h-4 text-gray-500 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white"
+                  viewBox="0 0 352 512" fill="currentColor">
+                  <path
+                    d="M242.7 256l100.1-100.1c12.3-12.3 12.3-32.2 0-44.5l-22.2-22.2c-12.3-12.3-32.2-12.3-44.5 0L176 189.3 75.9 89.2c-12.3-12.3-32.2-12.3-44.5 0L9.2 111.5c-12.3 12.3-12.3 32.2 0 44.5L109.3 256 9.2 356.1c-12.3 12.3-12.3 32.2 0 44.5l22.2 22.2c12.3 12.3 32.2 12.3 44.5 0L176 322.7l100.1 100.1c12.3 12.3 32.2 12.3 44.5 0l22.2-22.2c12.3-12.3 12.3-32.2 0-44.5L242.7 256z" />
+                </svg>
+              </button>
+            </form>
           </div>
           <button type="submit" @click="simulateSearch"
             class="inline-flex items-center py-2.5 px-3 ms-2 text-sm font-medium text-white bg-yellow-900 rounded-lg border border-yellow-900 hover:bg-yellow-1000 focus:ring-4 focus:outline-none focus:ring-yellow-300 dark:bg-yellow-1000 dark:hover:bg-yellow-700 dark:focus:ring-yellow-800">
@@ -138,14 +197,19 @@ export default {
       </div>
     </div>
 
-    <div class="max-w-6xl mx-auto px-10 " v-if="haveResults && results.length > 0">
+    <div class="max-w-6xl mx-auto px-10 " v-if="haveResults && resultsCollection.results.length > 0">
       <div class="flex flex-col gap-4 mt-4">
-        <h2 class="text-base font-light text-gray-600 dark:text-gray-100">About {{ results.length }} Results</h2>
-        <div class="flex flex-col gap-2" v-for="(result, index) in results" :key="index">
-          <a class="hover:underline font-bold text-yellow-1000 visited:text-red-1000 text-2xl" :href="result.link">{{
-            result.title
+        <h2 class="text-base font-light text-gray-600 dark:text-gray-100">About {{ resultsCollection.total }}
+          Results</h2>
+        <div class="flex flex-col gap-2" v-for="(result, index) in resultsCollection.results" :key="index">
+          <a class="hover:underline font-bold text-yellow-1000 visited:text-red-1000 text-2xl" :href="result.url">{{
+            result.url
           }}</a>
-          <p class="text-gray-600">{{ result.description }}</p>
+          <p class="text-gray-600">{{ result.statements[0] }}</p>
+        </div>
+
+        <div class="flex w-100 justify-center">
+          <pagination class="mt-8 mb-16" :collectionData="resultsCollection" @pageChange="handlePageChange" />
         </div>
       </div>
     </div>

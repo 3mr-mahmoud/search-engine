@@ -9,13 +9,13 @@ import javax.management.Query;
 import java.util.ArrayList;
 import java.util.List;
 
-@CrossOrigin(origins = "localhost:5173")
+@CrossOrigin(origins = "http://localhost:5173")
 @RestController
 
 @RequestMapping("/api")
 public class SearchController {
 
-    private static final int PER_PAGE = 1;
+    private static final int PER_PAGE = 10;
     @Autowired
     private QueryProcessor queryProcessor;
 
