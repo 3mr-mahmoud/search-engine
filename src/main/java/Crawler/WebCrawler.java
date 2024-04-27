@@ -10,15 +10,14 @@ import java.io.ByteArrayInputStream;
 import java.net.URL;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.List;
-import java.util.Vector;
+import java.util.*;
 
 import com.panforge.robotstxt.RobotsTxt;
 
 public class WebCrawler implements Runnable {
     private Mongo DB;
+
+    private static HashMap<String,String> robotsCache = new HashMap<>();
     private static Boolean done = new Boolean(false); // Boolean to stop crawling when reach 6000 crawled pages
     private static Boolean stopSearch = new Boolean(false); // Boolean to stop inserting seeds when reach 15000 links
 
@@ -74,13 +73,13 @@ public class WebCrawler implements Runnable {
                             .append("Compact", hash)
                             .append("CrawlTime", LocalDateTime.now().format(formatter).toString())
                             .append("Count", 1)
+                            .append("title", doc.title())
                             .append("rank", 0)
                             .append("links", new Vector<String>());
                     DB.InsertPage(newPage);
                     Elements links = doc.select("a[href]");
                     Vector<String> listLink = new Vector<String>();
-                    if (!stopSearch) {
-                        for (Element link : links) {
+                    for (Element link : links) {
                             String URL = link.absUrl("href");
                             String linkNormal = URL.split("[?#]")[0];
                             if (CheckRobot(linkNormal, "*")) {
@@ -89,10 +88,8 @@ public class WebCrawler implements Runnable {
                                     DB.InsertSeed(new Document("URL", linkNormal));
                                 }
                             }
-                            if (stopSearch)
-                                break;
-                        }
                     }
+
                     DB.updateLinks(seed, listLink);
                     if (done)
                         return;
@@ -134,9 +131,16 @@ public class WebCrawler implements Runnable {
     private boolean CheckRobot(String url, String userAgent) {
         try {
             URL link = new URL(url);
-            Connection.Response response = Jsoup.connect(link.getProtocol() + "://" + link.getHost() + "/robots.txt")
-                    .execute();
-            String doc = response.body();
+            String  host = link.getHost();
+            String doc;
+            if (robotsCache.containsKey(host)) {
+                doc = robotsCache.get(host);
+            } else {
+                Connection.Response response = Jsoup.connect(link.getProtocol() + "://" + link.getHost() + "/robots.txt")
+                        .execute();
+                doc = response.body();
+                robotsCache.put(host,doc);
+            }
             RobotsTxt robotsTxt = RobotsTxt.read(new ByteArrayInputStream(doc.getBytes()));
             return robotsTxt.query(userAgent, url);
         } catch (Exception e) {

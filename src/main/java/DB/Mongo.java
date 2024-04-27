@@ -76,6 +76,10 @@ public class Mongo {
         }
     }
 
+    public void Close() {
+        client.close();
+    }
+
     public MongoCollection<Document> getCollection(String collectionName) {
         return DB.getCollection(collectionName);
     }
@@ -144,21 +148,15 @@ public class Mongo {
             boolean isDup1, isDup2;
             Document found1, found2;
             synchronized (this) {
-                isDup1 = (found1 = crawlerCollection.find(new Document().append("Compact", hash)).first()) != null;
                 isDup2 = (found2 = crawlerCollection.find(new Document().append("URL", URL)).first()) != null;
                 if (isDup2) {
                     int count = found2.getInteger("Count");
                     Document filter = new Document("URL", URL);
                     Document update = new Document("$set", new Document("Count", ++count));
                     crawlerCollection.updateOne(filter, update);
-                } else if (isDup1) {
-                    int count = found1.getInteger("Count");
-                    Document filter = new Document("Compact", hash);
-                    Document update = new Document("$set", new Document("Count", ++count));
-                    crawlerCollection.updateOne(filter, update);
                 }
             }
-            return isDup1 || isDup2;
+            return isDup2;
         } catch (Exception e) {
             System.out.println("Error in checking existance the content of page " + e.getMessage());
             return true;
@@ -260,7 +258,7 @@ public class Mongo {
     public void InitializeRank() {
         Document filter = new Document();
         // Define the update operation
-        Document update = new Document("$set", new Document("rank", 1.0 / CountCrawled()));
+        Document update = new Document("$set", new Document("rank", 1-0.85 + 0.85 * (1.0 / CountCrawled())));
         // Update multiple documents that match the filter criteria
         crawlerCollection.updateMany(filter, update);
     }
