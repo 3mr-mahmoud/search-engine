@@ -14,6 +14,7 @@ public class SearchHistory {
     @Id
     private String id;
     private String keyword;
+    private int count;
 
     // Constructors, getters, setters...
 }

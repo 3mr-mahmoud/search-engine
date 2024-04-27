@@ -1,4 +1,5 @@
 package com.dragonball.backend;
+
 import org.springframework.data.mongodb.repository.MongoRepository;
 import org.springframework.data.mongodb.repository.Query;
 import org.springframework.stereotype.Repository;
@@ -12,6 +13,8 @@ public interface SearchHistoryRepository extends MongoRepository<SearchHistory, 
     boolean existsByKeyword(String keyword);
 
     // Custom query method to find distinct keywords starting with a partial string (case-insensitive)
-    @Query(fields="{ 'keyword' : 1 }")
-    List<SearchHistory> findDistinctByKeywordStartingWithIgnoreCaseOrderByIdDesc(String partialString);
+    @Query(fields = "{ 'keyword' : 1 ,'count': 1}")
+    List<SearchHistory> findDistinctByKeywordStartingWithIgnoreCaseOrderByCountDesc(String partialString);
+
+    SearchHistory findFirstByKeyword(String keyword);
 }

@@ -16,10 +16,14 @@ public class SearchHistoryService {
             SearchHistory searchHistory = new SearchHistory();
             searchHistory.setKeyword(keyword);
             searchHistoryRepository.save(searchHistory);
+        } else {
+            SearchHistory s = searchHistoryRepository.findFirstByKeyword(keyword);
+            s.setCount(s.getCount() + 1);
+            searchHistoryRepository.save(s);
         }
     }
 
     public List<SearchHistory> findSuggestions(String partialString) {
-        return searchHistoryRepository.findDistinctByKeywordStartingWithIgnoreCaseOrderByIdDesc(partialString);
+        return searchHistoryRepository.findDistinctByKeywordStartingWithIgnoreCaseOrderByCountDesc(partialString);
     }
 }

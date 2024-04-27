@@ -9,6 +9,8 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
@@ -23,34 +25,41 @@ public class QueryProcessor {
 
     @Autowired
     private IndexerRepository repository;
-    public ArrayList<IndexerDocument> search(String[] stems,boolean isQoutes,String ifQuotes) {
+
+    public ArrayList<IndexerDocument> search(String[] stems, boolean isQoutes, String ifQuotes) {
         ArrayList<IndexerDocument> ret = new ArrayList<>();
-        if(isQoutes)
-        {
+        if (isQoutes) {
             for (String word : stems) {
                 // Retrieve documents containing statements for each word
                 List<IndexerModel> result = repository.findByWord(word);
 
-                if(result.isEmpty())
+                if (result.isEmpty())
                     continue;
-                Double df=1.0/(double)result.get(0).getDocumentCount();
+                Double df = 1.0 / (double) result.get(0).getDocumentCount();
                 // Search within the "statements" field of each document for the actual sentence
                 // that was sent in the query
                 for (IndexerModel doc : result) {
                     List<IndexerDocument> docs = (ArrayList<IndexerDocument>) doc.getDocuments();
                     for (IndexerDocument doc1 : docs) {
                         List<String> statements = (ArrayList<String>) doc1.getStatements();
+                        List<String> newStatements = new ArrayList<>();
                         if (statements != null) {
                             boolean containsAllWords = false; // Initialize flag for each document
                             for (String statement : statements) {
                                 // Check if all words in the query are present in the statement
                                 if (statement.contains(ifQuotes)) {
+                                    statement = highlight(statement, ifQuotes);
+                                    newStatements.add(statement);
                                     containsAllWords = true;
                                     break; // Exit the inner loop as soon as one statement doesn't contain all words
+                                } else {
+                                    newStatements.add(statement);
                                 }
                             }
+                            Collections.sort(newStatements, Comparator.comparingInt(str -> ((String) str).length()).reversed());
+                            doc1.setStatements(newStatements);
                             if (containsAllWords) {
-                                doc1.setTfIdf(df*doc1.getTf());
+                                doc1.setTfIdf(df * doc1.getTf());
                                 ret.add(doc1); // Add the document to the set if it contains all words
                             }
                         }
@@ -58,23 +67,47 @@ public class QueryProcessor {
                 }
             }
 
-        }else{
+        } else {
             for (String word : stems) {
                 List<IndexerModel> result = repository.findByWord(word);
-                if(result.isEmpty())
+                if (result.isEmpty())
                     continue;
-                Double df=1.0/(double)result.get(0).getDocumentCount();
+                Double df = 1.0 / (double) result.get(0).getDocumentCount();
                 for (IndexerModel doc : result) {
-                    List<IndexerDocument> docs= (ArrayList<IndexerDocument>) doc.getDocuments();
-                    for(IndexerDocument doc1:docs){
-                        doc1.setTfIdf(df*doc1.getTf());
+                    List<IndexerDocument> docs = (ArrayList<IndexerDocument>) doc.getDocuments();
+                    for (IndexerDocument doc1 : docs) {
+                        List<String> statements = (ArrayList<String>) doc1.getStatements();
+                        List<String> newStatements = new ArrayList<>();
+                        for (String statement : statements) {
+                            // Check if all words in the query are present in the statement
+                            statement = highlight(statement, ifQuotes);
+                            newStatements.add(statement);
+                            System.out.println(statement);
+                        }
+                        Collections.sort(newStatements, Comparator.comparingInt(str -> ((String) str).length()).reversed());
+                        doc1.setStatements(newStatements);
+                        doc1.setTfIdf(df * doc1.getTf());
                         ret.add(doc1);
                     }
                 }
             }
 
         }
-        return  ret;
+        return ret;
+    }
+
+    private static String highlight(String input, String word) {
+        // Regular expression pattern to find "GitHub" ignoring case
+        Pattern pattern = Pattern.compile("(?i)" + word);
+        Matcher matcher = pattern.matcher(input);
+
+        // Replace each occurrence of "GitHub" with "<b>GitHub</b>"
+        StringBuffer sb = new StringBuffer();
+        while (matcher.find()) {
+            matcher.appendReplacement(sb, "<b>" + matcher.group() + "</b>");
+        }
+        matcher.appendTail(sb);
+        return sb.toString();
     }
 
     public QueryProcessor() {
@@ -82,33 +115,28 @@ public class QueryProcessor {
     }
 
     public ArrayList<IndexerDocument> searchly(String query) {
-        boolean isQoutes=isEnclosedInQuotes(query);
+        boolean isQoutes = isEnclosedInQuotes(query);
         String cleanWord = query.replaceAll("^\"|\"$", "");
-        String ss=cleanWord;
-        if(isQoutes){
+        String ss = cleanWord;
+        if (isQoutes) {
             System.out.println("isQoutes");
             System.out.println(cleanWord);
         }
         String[] words = preprocess(cleanWord);
         String[] stems = stemWords(words);
         ArrayList<IndexerDocument> documents;
-        if(isQoutes)
-        {
-            printWords(stems);
-            documents=(ArrayList<IndexerDocument>) searchIndex(stems,isQoutes, ss);
-        }else{
-            printWords(stems);
-            documents=(ArrayList<IndexerDocument>) searchIndex(stems,isQoutes," ");
-        }
-        ArrayList<IndexerDocument>FinalQuery=mergeDocuments(documents);
+        printWords(stems);
+        documents = (ArrayList<IndexerDocument>) searchIndex(stems, isQoutes, ss);
+        ArrayList<IndexerDocument> FinalQuery = mergeDocuments(documents);
         addrankFD(FinalQuery);
-        return  FinalQuery;
+        return FinalQuery;
     }
 
     private String[] preprocess(String query) {
         // Tokenize and preprocess the query
         return query.toLowerCase().split("\\s+");
     }
+
     public ArrayList<IndexerDocument> mergeDocuments(ArrayList<IndexerDocument> documents) {
         // Map to store documents grouped by URL
         Map<String, IndexerDocument> mergedDocsMap = new HashMap<>();
@@ -131,6 +159,7 @@ public class QueryProcessor {
         // Convert map values to ArrayList and return
         return new ArrayList<>(mergedDocsMap.values());
     }
+
     private String[] stemWords(String[] words) {
         List<String> stemmedWordsList = new ArrayList<>();
         PorterStemmer stemmer = new PorterStemmer();
@@ -138,7 +167,7 @@ public class QueryProcessor {
         for (String word : words) {
 
             // Stem the word
-            String stemmedWord =  stemmer.stemWord(word);
+            String stemmedWord = stemmer.stemWord(word);
             if (stemmedWord.isEmpty())
                 continue;
             // Add the stemmed word to the list
@@ -151,9 +180,9 @@ public class QueryProcessor {
         return stemmedWordsArray;
     }
 
-    private List<IndexerDocument> searchIndex(String[] stems,boolean isQoutes,String ifqoutes) {
+    private List<IndexerDocument> searchIndex(String[] stems, boolean isQoutes, String ifqoutes) {
         // Search the index for documents containing words with the same stems
-        return search(stems,isQoutes,ifqoutes);
+        return search(stems, isQoutes, ifqoutes);
     }
 
     private boolean isEnclosedInQuotes(String s) {
@@ -175,14 +204,15 @@ public class QueryProcessor {
             System.out.println("- " + doc);
         }
     }
-    private void addrankFD(ArrayList<IndexerDocument>documents){
-        for(IndexerDocument doc:documents){
-            Double a=0.0;
-            if(doc.getInHead())
-                a=1.0;
-            if(doc.getInTitle())
-                a+=0.5;
-            doc.setRank(doc.getRank()+doc.getTfIdf()+a);
+
+    private void addrankFD(ArrayList<IndexerDocument> documents) {
+        for (IndexerDocument doc : documents) {
+            Double a = 0.0;
+            if (doc.getInHead())
+                a = 1.0;
+            if (doc.getInTitle())
+                a += 0.5;
+            doc.setRank(doc.getRank() + doc.getTfIdf() + a);
         }
         Collections.sort(documents, Comparator.comparingDouble(doc -> ((IndexerDocument) doc).getRank()).reversed());
     }

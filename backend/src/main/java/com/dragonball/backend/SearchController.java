@@ -9,7 +9,7 @@ import javax.management.Query;
 import java.util.ArrayList;
 import java.util.List;
 
-@CrossOrigin(origins = "http://127.0.0.1:5173")
+@CrossOrigin(origins = "localhost:5173")
 @RestController
 
 @RequestMapping("/api")

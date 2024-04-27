@@ -122,7 +122,8 @@ public class Indexer implements Runnable {
                         doc1.append("inTitle", info.inTitle);
                         doc1.append("count", info.count);
                         doc1.append("tf", (float) info.count / (float) wordsCount);
-                        doc1.append("rank",doc.getDouble("rank"));
+                        doc1.append("rank", doc.getDouble("rank"));
+                        doc1.append("title", pageDoc.title());
                         // Extract statements where the word appears
                         Elements statementElements = pageDoc.getElementsContainingOwnText(word);
                         List<String> statements = extractStatements(statementElements);
@@ -148,7 +149,8 @@ public class Indexer implements Runnable {
                         doc1.append("inTitle", info.inTitle);
                         doc1.append("count", info.count);
                         doc1.append("tf", (float) info.count / (float) wordsCount);
-                        doc1.append("rank",doc.getDouble("rank"));
+                        doc1.append("rank", doc.getDouble("rank"));
+                        doc1.append("title", pageDoc.title());
                         // Extract statements where the word appears
                         Elements statementElements = pageDoc.getElementsContainingOwnText(word);
                         List<String> statements = extractStatements(statementElements);
@@ -175,7 +177,9 @@ public class Indexer implements Runnable {
     private List<String> extractStatements(Elements statementElements) {
         List<String> statements = new ArrayList<>();
         for (Element statementElement : statementElements) {
-            statements.add(statementElement.ownText());
+            String text = statementElement.ownText();
+            if (text.length() > 50)
+                statements.add(text);
         }
         return statements;
     }

@@ -17,7 +17,6 @@ public class IndexerModel {
     private String word;
     private Integer documentCount;
     private Double rank;
-    private String title;
     private List<IndexerDocument> documents;
 }
 
