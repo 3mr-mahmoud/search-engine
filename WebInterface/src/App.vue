@@ -1,6 +1,7 @@
 <script>
 import apiClient from './apiClient';
 import pagination from './components/pagination.vue';
+import { watch } from 'vue';
 export default {
   components: { pagination },
   data() {
@@ -22,6 +23,7 @@ export default {
     };
   },
   mounted() {
+    this.page = this.$route.query.page ? parseInt(this.$route.query.page) : 1;
     this.applyTheme();
   },
   methods: {
@@ -30,23 +32,23 @@ export default {
       this.page = 1;
       this.onSuggestions = false;
       this.searchFocused = false;
-      this.searchHandler();
+      this.goToSearchLink();
     },
     reset() {
       this.search = '';
       this.page = 1;
       this.haveResults = false;
+      this.$router.push({ query: {} });
     },
     handlePageChange(page) {
       this.page = page;
-      this.searchHandler();
+      this.$router.push({ query: { ...this.$route.query, page: this.page } });
+    },
+    goToSearchLink() {
+      this.$router.push({ query: { ...this.$route.query, search: this.search, page: this.page } });
     },
     searchHandler() {
       this.loading = true;
-      if (this.lastSearch !== this.search) {
-        this.page = 1;
-        this.lastSearch = this.search;
-      }
       apiClient.get('/search', {
         params: {
           keyword: this.search,
@@ -71,16 +73,6 @@ export default {
         console.error('Error searching', error);
       });
     },
-    simulateSearch() {
-      // this.loading = true;
-
-
-      // setTimeout(() => {
-      //   this.loading = false;
-      //   this.haveResults = true;
-      // }, 5000);
-      this.searchHandler();
-    },
     toggleTheme() {
       this.isDark = !this.isDark;
       this.applyTheme();
@@ -101,9 +93,28 @@ export default {
 
   },
   watch: {
-    search() {
-      this.getSuggestions();
-    }
+    search(newVal) {
+      if (newVal) {
+        this.getSuggestions();
+      }
+    },
+    '$route.query': {
+      immediate: true,
+      handler: function (val) {
+        if (val.search) {
+          this.search = val.search;
+          if (val.page) {
+            this.page = val.page;
+          } else {
+            this.page = 1;
+          }
+          this.searchHandler();
+        } else {
+          this.search = val.search;
+          this.haveResults = false;
+        }
+      }
+    },
   }
 }
 </script>
@@ -152,7 +163,7 @@ export default {
                   d="M323.6 51.2c-20.8 19.3-39.6 39.6-56.2 60C240.1 73.6 206.3 35.5 168 0 69.7 91.2 0 210 0 281.6 0 408.9 100.3 512 224 512s224-103.2 224-230.4c0-53.3-52-163.1-124.4-230.4zm-19.5 340.7C282.4 407 255.7 416 226.9 416 154.7 416 96 368.3 96 290.8c0-38.6 24.3-72.6 72.8-130.8 6.9 8 98.8 125.3 98.8 125.3l58.6-66.9c4.1 6.9 7.9 13.6 11.3 20 27.4 52.2 15.8 119-33.4 153.4z" />
               </svg>
             </div>
-            <form @submit.prevent="simulateSearch">
+            <form @submit.prevent="goToSearchLink">
               <input type="text" id="voice-search" v-model="search"
                 class="bg-white border border-gray-300 focus:outline-none text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-gray-500 block w-full ps-10 p-2.5  dark:bg-gray-700 dark:border-gray-600 dark:placeholder-gray-400 dark:text-white dark:focus:ring-gray-500 dark:focus:border-gray-500"
                 placeholder="Search Games, Coding..." @focus="searchFocused = true" @blur="removeSearchFocus"
@@ -179,7 +190,7 @@ export default {
               </button>
             </form>
           </div>
-          <button type="submit" @click="simulateSearch"
+          <button type="submit" @click="goToSearchLink"
             class="inline-flex items-center py-2.5 px-3 ms-2 text-sm font-medium text-white bg-yellow-900 rounded-lg border border-yellow-900 hover:bg-yellow-1000 focus:ring-4 focus:outline-none focus:ring-yellow-300 dark:bg-yellow-1000 dark:hover:bg-yellow-700 dark:focus:ring-yellow-800">
             <svg class="w-4 h-4 me-2" aria-hidden="true" xmlns="http://www.w3.org/2000/svg" fill="none"
               viewBox="0 0 20 20">
