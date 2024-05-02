@@ -148,8 +148,8 @@ export default {
         </div>
 
 
-        <h3 class="text-3xl text-center title"
-          :class="{ 'mb-5 block': !haveResults, 'animate__animated animate__rubberBand animate__delay-2s': haveResults }">
+        <h3 class="text-3xl text-center title" @click="reset"
+          :class="{ 'mb-5 block ': !haveResults, 'animate__animated animate__rubberBand animate__delay-2s  cursor-pointer': haveResults }">
           <b class="text-red-1000 mr-1">Dragon</b>
           <b class="text-yellow-1000">Ball</b>
         </h3>

@@ -47,13 +47,10 @@ public class QueryProcessor {
                             boolean containsAllWords = false; // Initialize flag for each document
                             for (String statement : statements) {
                                 // Check if all words in the query are present in the statement
-                                if (statement.toLowerCase().contains(ifQuotes.toLowerCase())) {
-                                    statement = highlight(statement, ifQuotes);
+                                if (checkPhrase(statement, ifQuotes)) {
+                                    statement = highlight(statement, ifQuotes,true);
                                     newStatements.add(statement);
                                     containsAllWords = true;
-                                    break; // Exit the inner loop as soon as one statement doesn't contain all words
-                                } else {
-                                    newStatements.add(statement);
                                 }
                             }
                             Collections.sort(newStatements, Comparator.comparingInt(str -> ((String) str).length()).reversed());
@@ -80,9 +77,8 @@ public class QueryProcessor {
                         List<String> newStatements = new ArrayList<>();
                         for (String statement : statements) {
                             // Check if all words in the query are present in the statement
-                            statement = highlight(statement, ifQuotes);
+                            statement = highlight(statement, ifQuotes, false);
                             newStatements.add(statement);
-                            System.out.println(statement);
                         }
                         Collections.sort(newStatements, Comparator.comparingInt(str -> ((String) str).length()).reversed());
                         doc1.setStatements(newStatements);
@@ -96,9 +92,13 @@ public class QueryProcessor {
         return ret;
     }
 
-    private static String highlight(String input, String word) {
+    private static String highlight(String input, String word, boolean exactMatch) {
         // Regular expression pattern to find "GitHub" ignoring case
-        Pattern pattern = Pattern.compile("(?i)" + word);
+        String Regex = "(?i)" + word;
+        if(exactMatch) {
+            Regex = "\\b(?i)" + word + "\\b";
+        }
+        Pattern pattern = Pattern.compile(Regex);
         Matcher matcher = pattern.matcher(input);
 
         // Replace each occurrence of "GitHub" with "<b>GitHub</b>"
@@ -108,6 +108,14 @@ public class QueryProcessor {
         }
         matcher.appendTail(sb);
         return sb.toString();
+    }
+
+    private static Boolean checkPhrase(String input, String word) {
+        // Regular expression pattern to find "GitHub" ignoring case
+        Pattern pattern = Pattern.compile("\\b(?i)" + word + "\\b");
+        Matcher matcher = pattern.matcher(input);
+
+        return matcher.find();
     }
 
     public QueryProcessor() {
