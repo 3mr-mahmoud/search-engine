@@ -1,6 +1,7 @@
 package Searching;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.Comparator;
 import java.util.HashMap;
@@ -84,28 +85,126 @@ public class queryProcessor {
 
     public ArrayList<Document> searchly() {
         boolean isQoutes=isEnclosedInQuotes(query);
-        String cleanWord = query.replaceAll("^\"|\"$", "");
-        String ss=cleanWord;
-        if(isQoutes){
-        System.out.println("isQoutes");
-        System.out.println(cleanWord);
+        ArrayList<String> operations = new ArrayList<>(Arrays.asList("AND", "OR", "NOT"));
+        ArrayList<ArrayList<String>> parsedQuery = parseQuery(query, operations);
+        ArrayList<Document> documents = new ArrayList<>();
+        if(parsedQuery.get(0).isEmpty()){
+            String cleanWord = query.replaceAll("^\"|\"$", "");
+            String ss=cleanWord;
+
+            // Print the parsed query
+
+            if(isQoutes){
+             System.out.println("isQoutes");
+             System.out.println(cleanWord);
+            }
+            String[] words = preprocess(cleanWord);
+            String[] stems = stemWords(words);
+            
+            if(isQoutes)
+            {
+                printWords(stems);
+                documents=(ArrayList<Document>) searchIndex(stems,isQoutes, ss);
+            }else{
+                printWords(stems);
+                documents=(ArrayList<Document>) searchIndex(stems,isQoutes," ");
+            }
         }
-        String[] words = preprocess(cleanWord);
-        String[] stems = stemWords(words);
-        ArrayList<Document> documents;
-        if(isQoutes)
-        {
-            printWords(stems);
-            documents=(ArrayList<Document>) searchIndex(stems,isQoutes, ss);
-        }else{
-            printWords(stems);
-            documents=(ArrayList<Document>) searchIndex(stems,isQoutes," ");
+        else{
+            System.out.println("iiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiimmmmmmmmm");
+            String[] words;
+            String[] stems ;
+            System.out.println("Operations: " + parsedQuery.get(0));
+             System.out.println("Keywords: " + parsedQuery.get(1));
+            ArrayList<String> cleanWords=new ArrayList<>();
+            int i=0;
+            operations=parsedQuery.get(0);
+            ArrayList<String> Ops=new ArrayList<>();
+            for(String ww:parsedQuery.get(1)){
+                cleanWords.add(ww.replaceAll("^\"|\"$", ""));
+                System.out.println("isQoutes");
+                System.out.println(ww);
+                if(operations.size()>i){
+                    Ops.add(((String)operations.get(i)).toLowerCase().replaceAll(" ", ""));
+                }
+                i++;
+            }
+            System.out.println("Operations: " + Ops.get(0));
+            if(Ops.get(0).contains("and")){
+                words = preprocess(cleanWords.get(0)+" "+cleanWords.get(1));
+                stems = stemWords(words);
+                printWords(stems);
+                documents=(ArrayList<Document>) searchIndex(stems,isQoutes,cleanWords.get(0)+" "+cleanWords.get(1));
+            }else if(Ops.get(0).contains("or")){
+                System.out.println("iiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiimmmmmmmmm");
+                words=preprocess(cleanWords.get(0));
+                stems = stemWords(words);
+                printWords(stems);
+                documents=(ArrayList<Document>) searchIndex(stems,isQoutes,cleanWords.get(0));
+                words=preprocess(cleanWords.get(1));
+                stems = stemWords(words);
+                printWords(stems);
+                documents.addAll((ArrayList<Document>) searchIndex(stems,isQoutes,cleanWords.get(1)));
+            }else if(Ops.get(0).contains("not")){
+                words=preprocess(cleanWords.get(0));
+                stems = stemWords(words);
+                printWords(stems);
+                documents=(ArrayList<Document>) searchIndex(stems,isQoutes,cleanWords.get(0));
+            }
         }
         ArrayList<Document>FinalQuery=mergeDocuments(documents);
-        addrankFD(FinalQuery);
-        return  FinalQuery;
+            addrankFD(FinalQuery);
+            return FinalQuery;
     }
-
+   
+   
+        public static ArrayList<ArrayList<String>> parseQuery(String query, List<String> operations) {
+            ArrayList<String> parsedOperations = new ArrayList<>();
+            ArrayList<String> statements = new ArrayList<>();
+    
+            // Use a Set for faster lookup
+            Set<String> operationSet = new HashSet<>(operations);
+    
+            // Variables for handling parentheses
+            boolean inQuotes = false;
+            StringBuilder currentStatement = new StringBuilder();
+    
+            // Iterate over the characters of the query
+            for (int i = 0; i < query.length(); i++) {
+                char c = query.charAt(i);
+    
+                if (c == '"') {
+                    inQuotes = !inQuotes;
+                } else if (Character.isWhitespace(c) && !inQuotes) {
+                    // Split the query into terms at whitespace outside quotes
+                    String term = currentStatement.toString().trim();
+                    if (!term.isEmpty()) {
+                        if (operationSet.contains(term.toUpperCase())) {
+                            parsedOperations.add(term.toUpperCase());
+                        } else {
+                            statements.add(term);
+                        }
+                    }
+                    currentStatement.setLength(0); // Clear StringBuilder
+                } else {
+                    // Append the character to the current statement
+                    currentStatement.append(c);
+                }
+            }
+    
+            // Add the last statement if any
+            String lastTerm = currentStatement.toString().trim();
+            if (!lastTerm.isEmpty()) {
+                statements.add(lastTerm);
+            }
+    
+            ArrayList<ArrayList<String>> parsedQuery = new ArrayList<>();
+            parsedQuery.add(parsedOperations);
+            parsedQuery.add(statements);
+    
+            return parsedQuery;
+        }
+    
     private String[] preprocess(String query) {
         // Tokenize and preprocess the query
         return query.toLowerCase().split("\\s+");
