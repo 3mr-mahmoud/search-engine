@@ -25,13 +25,36 @@ export default {
           Previous
         </a>
       </li>
-      <li v-for="(page, index) in collectionData.pagesAvailable" :key="index">
-        <a href="#" @click.prevent="pageChange(page)" :class="{
-          'z-10 text-red-600 border-red-300 bg-red-50 hover:bg-red-100 hover:text-red-700 dark:border-gray-700 dark:bg-gray-700 dark:text-white': page == collectionData.currentPage,
-          'text-gray-500 bg-white border-gray-300 hover:bg-gray-100 hover:text-gray-700 dark:bg-gray-800 dark:border-gray-700 dark:text-gray-400 dark:hover:bg-gray-700 dark:hover:text-white': page != collectionData.currentPage
-        }" class="flex items-center justify-center px-4 h-10 leading-tight  border">{{
-          page }}</a>
-      </li>
+      <template v-for="(page, index) in collectionData.pagesAvailable" :key="index">
+        <li v-if="collectionData.pagesAvailable <= 15">
+          <a href="#" @click.prevent="pageChange(page)" :class="{
+            'z-10 text-red-600 border-red-300 bg-red-50 hover:bg-red-100 hover:text-red-700 dark:border-gray-700 dark:bg-gray-700 dark:text-white': page == collectionData.currentPage,
+            'text-gray-500 bg-white border-gray-300 hover:bg-gray-100 hover:text-gray-700 dark:bg-gray-800 dark:border-gray-700 dark:text-gray-400 dark:hover:bg-gray-700 dark:hover:text-white': page != collectionData.currentPage
+          }" class="flex items-center justify-center px-4 h-10 leading-tight  border">{{
+            page }}</a>
+        </li>
+
+        <template v-else>
+          <li
+            v-if="(page >= collectionData.currentPage - 5 && page <= collectionData.currentPage + 5) || (page > collectionData.currentPage + 6 && page >= collectionData.pagesAvailable - 5)">
+
+            <a href="#" @click.prevent="pageChange(page)" :class="{
+              'z-10 text-red-600 border-red-300 bg-red-50 hover:bg-red-100 hover:text-red-700 dark:border-gray-700 dark:bg-gray-700 dark:text-white': page == collectionData.currentPage,
+              'text-gray-500 bg-white border-gray-300 hover:bg-gray-100 hover:text-gray-700 dark:bg-gray-800 dark:border-gray-700 dark:text-gray-400 dark:hover:bg-gray-700 dark:hover:text-white': page != collectionData.currentPage
+            }" class="flex items-center justify-center px-4 h-10 leading-tight  border">{{
+              page }}</a>
+          </li>
+
+          <li v-if="page == (collectionData.currentPage + 6)">
+            <a href="#"
+              class=" text-gray-700 bg-gray-100 border-gray-300 dark:bg-gray-700 dark:border-gray-700 dark:text-white  flex items-center justify-center px-4 h-10 leading-tight border">
+              ...
+            </a>
+          </li>
+        </template>
+
+
+      </template>
       <li>
         <a href="#" v-if="collectionData.currentPage < collectionData.pagesAvailable"
           @click.prevent="pageChange(collectionData.currentPage + 1)"
