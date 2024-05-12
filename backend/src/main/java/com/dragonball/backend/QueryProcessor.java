@@ -26,10 +26,11 @@ public class QueryProcessor {
     @Autowired
     private IndexerRepository repository;
 
-    public ArrayList<IndexerDocument> search(String[] stems, boolean isQoutes, String ifQuotes) {
+    public ArrayList<IndexerDocument> search(String[] stems, boolean isQoutes, ArrayList<String> phrases, ArrayList<String> operators) {
         ArrayList<IndexerDocument> ret = new ArrayList<>();
         if (isQoutes) {
             for (String word : stems) {
+
                 // Retrieve documents containing statements for each word
                 List<IndexerModel> result = repository.findByWord(word);
 
@@ -43,16 +44,43 @@ public class QueryProcessor {
                     for (IndexerDocument doc1 : docs) {
                         List<String> statements = (ArrayList<String>) doc1.getStatements();
                         List<String> newStatements = new ArrayList<>();
+                        System.out.println("hee");
                         if (statements != null) {
-                            boolean containsAllWords = false; // Initialize flag for each document
+                            // all false by default
+                            boolean[] phrasesFound = new boolean[phrases.size()];
+                            System.out.println(phrasesFound.toString());
+
+
+
                             for (String statement : statements) {
-                                // Check if all words in the query are present in the statement
-                                if (checkPhrase(statement, ifQuotes)) {
-                                    statement = highlight(statement, ifQuotes,true);
-                                    newStatements.add(statement);
-                                    containsAllWords = true;
+                                String highlightedStatement = statement;
+                               for (int i = 0; i < phrases.size(); i++) {
+                                   System.out.println("checking for phrase "+phrases.get(i));
+                                   // Check if all words in the query are present in the statement
+                                   if (checkPhrase(statement, phrases.get(i))) {
+                                       System.out.println("found phrase "+phrases.get(i));
+                                       highlightedStatement = highlight(highlightedStatement, phrases.get(i),true);
+                                       phrasesFound[i] = true;
+                                   }
+                               }
+                               if(!highlightedStatement.equals(statement)) {
+                                   newStatements.add(highlightedStatement);
+                               }
+
+                            }
+
+                            boolean containsAllWords = phrasesFound[0]; // Initialize flag for each document
+
+                            for (int i = 0; i < operators.size(); i++) {
+                                if(operators.get(i).toUpperCase().equals("AND")) {
+                                    containsAllWords = containsAllWords && phrasesFound[i+1];
+                                } else if (operators.get(i).toUpperCase().equals("OR")) {
+                                    containsAllWords = containsAllWords || phrasesFound[i+1];
+                                } else if (operators.get(i).toUpperCase().equals("NOT")) {
+                                    containsAllWords = containsAllWords && !phrasesFound[i+1];
                                 }
                             }
+
                             Collections.sort(newStatements, Comparator.comparingInt(str -> ((String) str).length()).reversed());
                             doc1.setStatements(newStatements);
                             if (containsAllWords) {
@@ -77,7 +105,7 @@ public class QueryProcessor {
                         List<String> newStatements = new ArrayList<>();
                         for (String statement : statements) {
                             // Check if all words in the query are present in the statement
-                            statement = highlight(statement, ifQuotes, false);
+                            statement = highlight(statement, phrases.get(0), false);
                             newStatements.add(statement);
                         }
                         Collections.sort(newStatements, Comparator.comparingInt(str -> ((String) str).length()).reversed());
@@ -124,8 +152,9 @@ public class QueryProcessor {
 
     public ArrayList<IndexerDocument> searchly(String query) {
         boolean isQoutes = isEnclosedInQuotes(query);
-        String cleanWord = query.replaceAll("^\"|\"$", "");
-        String ss = cleanWord;
+
+        String cleanWord = query.replaceAll("\"", "");
+        String ss = query;
         if (isQoutes) {
             System.out.println("isQoutes");
             System.out.println(cleanWord);
@@ -190,12 +219,31 @@ public class QueryProcessor {
 
     private List<IndexerDocument> searchIndex(String[] stems, boolean isQoutes, String ifqoutes) {
         // Search the index for documents containing words with the same stems
-        return search(stems, isQoutes, ifqoutes);
+        ArrayList<String> phrases = new ArrayList<>();
+        ArrayList<String> operators = new ArrayList<>();
+        if(isQoutes) {
+            Pattern pattern = Pattern.compile("\"([^\"]*)\"(?:\\s+(AND|OR|NOT))?"); // Modified pattern
+            Matcher matcher = pattern.matcher(ifqoutes);
+
+            // Extract quoted strings and operators
+            while (matcher.find()) {
+                phrases.add(matcher.group(1));
+                System.out.println("Quoted string: " + matcher.group(1));
+                if (matcher.group(2) != null) {
+                    operators.add(matcher.group(2));
+                    System.out.println("Operator: " + matcher.group(2));
+                }
+            }
+        } else {
+            phrases.add(ifqoutes);
+        }
+
+        return search(stems, isQoutes, phrases, operators);
     }
 
     private boolean isEnclosedInQuotes(String s) {
         // Check if the modified string starts and ends with double quotes
-        return s.startsWith("\"") && s.endsWith("\"");
+        return s.contains("\"");
     }
 
 
