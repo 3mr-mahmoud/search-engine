@@ -1,6 +1,5 @@
 package com.dragonball.backend;
 
-
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Comparator;
@@ -18,7 +17,6 @@ import org.bson.Document;
 
 import ca.rmen.porterstemmer.PorterStemmer;
 
-
 @Service
 public class QueryProcessor {
     private String query;
@@ -26,7 +24,8 @@ public class QueryProcessor {
     @Autowired
     private IndexerRepository repository;
 
-    public ArrayList<IndexerDocument> search(String[] stems, boolean isQoutes, ArrayList<String> phrases, ArrayList<String> operators) {
+    public ArrayList<IndexerDocument> search(String[] stems, boolean isQoutes, ArrayList<String> phrases,
+            ArrayList<String> operators) {
         ArrayList<IndexerDocument> ret = new ArrayList<>();
         if (isQoutes) {
             for (String word : stems) {
@@ -50,56 +49,40 @@ public class QueryProcessor {
                             boolean[] phrasesFound = new boolean[phrases.size()];
                             System.out.println(phrasesFound.toString());
 
-
-
                             for (String statement : statements) {
-<<<<<<< Updated upstream
-=======
-<<<<<<< Updated upstream
-                                // Check if all words in the query are present in the statement
-                                if (checkPhrase(statement, ifQuotes)) {
-                                    statement = highlight(statement, ifQuotes,true);
-                                    newStatements.add(statement);
-                                    containsAllWords = true;
-=======
->>>>>>> Stashed changes
+
                                 String highlightedStatement = statement;
-                               for (int i = 0; i < phrases.size(); i++) {
-                                   System.out.println("checking for phrase "+phrases.get(i));
-                                   // Check if all words in the query are present in the statement
-                                   if (checkPhrase(statement, phrases.get(i))) {
-                                       System.out.println("found phrase "+phrases.get(i));
-<<<<<<< Updated upstream
-                                       highlightedStatement = highlight(highlightedStatement, phrases.get(i),true);
-=======
-                                       highlightedStatement = highlight(highlightedStatement, phrases.get(i));
->>>>>>> Stashed changes
-                                       phrasesFound[i] = true;
-                                   }
-                               }
-                               if(!highlightedStatement.equals(statement)) {
-                                   newStatements.add(highlightedStatement);
-                               }
+                                for (int i = 0; i < phrases.size(); i++) {
+                                    System.out.println("checking for phrase " + phrases.get(i));
+                                    // Check if all words in the query are present in the statement
+                                    if (checkPhrase(statement, phrases.get(i))) {
+                                        System.out.println("found phrase " + phrases.get(i));
+
+                                        highlightedStatement = highlight(highlightedStatement, phrases.get(i));
+
+                                        phrasesFound[i] = true;
+                                    }
+                                }
+                                if (!highlightedStatement.equals(statement)) {
+                                    newStatements.add(highlightedStatement);
+                                }
 
                             }
 
                             boolean containsAllWords = phrasesFound[0]; // Initialize flag for each document
 
                             for (int i = 0; i < operators.size(); i++) {
-                                if(operators.get(i).toUpperCase().equals("AND")) {
-                                    containsAllWords = containsAllWords && phrasesFound[i+1];
+                                if (operators.get(i).toUpperCase().equals("AND")) {
+                                    containsAllWords = containsAllWords && phrasesFound[i + 1];
                                 } else if (operators.get(i).toUpperCase().equals("OR")) {
-                                    containsAllWords = containsAllWords || phrasesFound[i+1];
+                                    containsAllWords = containsAllWords || phrasesFound[i + 1];
                                 } else if (operators.get(i).toUpperCase().equals("NOT")) {
-                                    containsAllWords = containsAllWords && !phrasesFound[i+1];
-<<<<<<< Updated upstream
-=======
->>>>>>> Stashed changes
->>>>>>> Stashed changes
+                                    containsAllWords = containsAllWords && !phrasesFound[i + 1];
                                 }
                             }
 
-                            Collections.sort(newStatements, Comparator.comparingInt(str -> ((String) str).length()).reversed());
+                            Collections.sort(newStatements,
+                                    Comparator.comparingInt(str -> ((String) str).length()).reversed());
                             doc1.setStatements(newStatements);
                             if (containsAllWords) {
                                 doc1.setTfIdf(df * doc1.getTf());
@@ -123,21 +106,13 @@ public class QueryProcessor {
                         List<String> newStatements = new ArrayList<>();
                         for (String statement : statements) {
                             // Check if all words in the query are present in the statement
-<<<<<<< Updated upstream
-                            statement = highlight(statement, phrases.get(0), false);
-=======
-<<<<<<< Updated upstream
-                            statement = highlight(statement, ifQuotes, false);
->>>>>>> Stashed changes
-                            newStatements.add(statement);
-=======
                             String highlightedStatement = highlight(statement, phrases.get(0));
-                            if(!highlightedStatement.equals(statement)) {
+                            if (!highlightedStatement.equals(statement)) {
                                 newStatements.add(highlightedStatement);
                             }
->>>>>>> Stashed changes
                         }
-                        Collections.sort(newStatements, Comparator.comparingInt(str -> ((String) str).length()).reversed());
+                        Collections.sort(newStatements,
+                                Comparator.comparingInt(str -> ((String) str).length()).reversed());
                         doc1.setStatements(newStatements);
                         doc1.setTfIdf(df * doc1.getTf());
                         ret.add(doc1);
@@ -247,7 +222,7 @@ public class QueryProcessor {
         // Search the index for documents containing words with the same stems
         ArrayList<String> phrases = new ArrayList<>();
         ArrayList<String> operators = new ArrayList<>();
-        if(isQoutes) {
+        if (isQoutes) {
             Pattern pattern = Pattern.compile("\"([^\"]*)\"(?:\\s+(AND|OR|NOT))?"); // Modified pattern
             Matcher matcher = pattern.matcher(ifqoutes);
 
@@ -271,7 +246,6 @@ public class QueryProcessor {
         // Check if the modified string starts and ends with double quotes
         return s.contains("\"");
     }
-
 
     private void printWords(String[] words) {
         System.out.println("Words to search for:");
@@ -299,6 +273,3 @@ public class QueryProcessor {
         Collections.sort(documents, Comparator.comparingDouble(doc -> ((IndexerDocument) doc).getRank()).reversed());
     }
 }
-
-
-
