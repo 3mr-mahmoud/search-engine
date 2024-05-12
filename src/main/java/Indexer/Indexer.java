@@ -63,13 +63,22 @@ public class Indexer implements Runnable {
                 HashMap<String, wordInfo> wordCountMap = new HashMap<>();
                 long wordsCount = 0;
 
+
+
                 for (Element element : elements) {
                     if (element.ownText().isEmpty()) {
                         continue;
                     }
 
+
+
+
                     String[] words = element.ownText().split("\\s+");
+                    String elementText = element.ownText();
                     for (String word : words) {
+
+
+
                         boolean inHead = false;
                         if (element.nodeName().equals("h1") || element.nodeName().equals("h5")
                                 || element.nodeName().equals("h2") || element.nodeName().equals("h3")
@@ -96,6 +105,9 @@ public class Indexer implements Runnable {
                             if (inHead)
                                 wordCountMap.get(stemmedWord).inHead = inHead;
 
+                            if (elementText.length() > 10 && elementText.length() <= 580)
+                                wordCountMap.get(stemmedWord).statements.add(elementText);
+
                         } else {
                             wordInfo I = new wordInfo();
                             wordCountMap.put(stemmedWord, I);
@@ -108,6 +120,9 @@ public class Indexer implements Runnable {
                             {
                                 wordCountMap.get(stemmedWord).inHead = inHead;
                             }
+
+                            if (elementText.length() > 10 && elementText.length() <= 580)
+                                wordCountMap.get(stemmedWord).statements.add(elementText);
                         }
                     }
                 }
@@ -135,10 +150,7 @@ public class Indexer implements Runnable {
                             }
                         }
                         // Extract statements where the word appears
-                        Elements statementElements = pageDoc.getElementsContainingOwnText(word);
-                        List<String> statements = extractStatements(statementElements);
-
-                        doc1.append("statements", statements);
+                        doc1.append("statements", info.statements);
 
                         List<Document> documents = Arrays.asList(doc1);
 
@@ -174,10 +186,7 @@ public class Indexer implements Runnable {
                             }
                         }
                         // Extract statements where the word appears
-                        Elements statementElements = pageDoc.getElementsContainingOwnText(word);
-                        List<String> statements = extractStatements(statementElements);
-
-                        doc1.append("statements", statements);
+                        doc1.append("statements", info.statements);
 
                         List<Document> documents = page.get("documents", List.class);
                         Integer count = page.get("documentCount", Integer.class);
@@ -196,13 +205,13 @@ public class Indexer implements Runnable {
     }
 
     // Function to extract statements where a word appears
-    private List<String> extractStatements(Elements statementElements) {
-        List<String> statements = new ArrayList<>();
-        for (Element statementElement : statementElements) {
-            String text = statementElement.ownText();
-            if (text.length() > 10 && text.length() <= 580)
-                statements.add(text);
-        }
-        return statements;
-    }
+//    private List<String> extractStatements(Elements statementElements) {
+//        List<String> statements = new ArrayList<>();
+//        for (Element statementElement : statementElements) {
+//            String text = statementElement.ownText();
+//            if (text.length() > 10 && text.length() <= 580)
+//                statements.add(text);
+//        }
+//        return statements;
+//    }
 }

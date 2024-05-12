@@ -8,7 +8,7 @@ public class Main {
     public static void main(String[] args) {
         Mongo DB = new Mongo(); //create mongo data base
         /*          MultiThreading                */
-        int numOfThreads = 10;
+        int numOfThreads = 16;
         Thread[] threads = new Thread[numOfThreads];
         int i = 0;
         Indexer.currentChunkIndex = ((int) DB.Count("IndexedUrls")) - 1;
