@@ -98,37 +98,26 @@ public class Indexer implements Runnable {
                         String stemmedWord = porterStemmer.stemWord(cleanWord);
                         if (stemmedWord.isEmpty())
                             continue;
-                        if (wordCountMap.containsKey(stemmedWord)) {
-                            wordCountMap.get(stemmedWord).count++;
-                            if (inTitle)
-                                wordCountMap.get(stemmedWord).inTitle = inTitle;
-                            if (inHead)
-                                wordCountMap.get(stemmedWord).inHead = inHead;
 
-                            if (elementText.length() > 10 && elementText.length() <= 580)
-                                wordCountMap.get(stemmedWord).statements.add(elementText);
+                        wordInfo info = wordCountMap.getOrDefault(stemmedWord, new wordInfo());
 
-                        } else {
-                            wordInfo I = new wordInfo();
-                            wordCountMap.put(stemmedWord, I);
-                            wordCountMap.get(stemmedWord).count = 1;
-                            if (inTitle) {
-                                wordCountMap.get(stemmedWord).inTitle = inTitle;
-                            }
-                            if (inHead)
+                        info.count++;
 
-                            {
-                                wordCountMap.get(stemmedWord).inHead = inHead;
-                            }
+                        if (inTitle)
+                            info.inTitle = inTitle;
+                        if (inHead)
+                            info.inHead = inHead;
 
-                            if (elementText.length() > 10 && elementText.length() <= 580)
-                                wordCountMap.get(stemmedWord).statements.add(elementText);
-                        }
+                        if (elementText.length() > 10 && elementText.length() <= 580)
+                            info.statements.add(elementText);
+
+                        wordCountMap.put(stemmedWord, info);
                     }
                 }
 
                 for (String word : wordCountMap.keySet()) {
-                    if (!DB.isWordIndexed(word)) {
+                    Document wordDoc = DB.GetIndexedWord(word);
+                    if (wordDoc == null) {
                         org.bson.Document doc1 = new org.bson.Document();
                         doc1.append("url", url);
                         wordInfo info = wordCountMap.get(word);
@@ -162,7 +151,7 @@ public class Indexer implements Runnable {
 
                     } else {
                         // Update page
-                        Document page = DB.GetIndexedWord(word);
+                        Document page = wordDoc;
                         org.bson.Document doc1 = new org.bson.Document();
                         wordInfo info = wordCountMap.get(word);
 

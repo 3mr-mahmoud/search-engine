@@ -196,24 +196,12 @@ public class Mongo {
         }
     }
 
-    public boolean isWordIndexed(String word) {
-        try {
-            boolean isDup;
-            synchronized (this) {
-                isDup = indexerCollection.find(new Document().append("word", word)).first() != null;
-            }
-            return isDup;
-        } catch (Exception e) {
-            System.out.println("Error in checking existance the content of page " + e.getMessage());
-            return true;
-        }
-    }
 
     public void InsertWordIndexer(org.bson.Document doc) {
         try {
-            synchronized (this) {
+            //synchronized (this) {
                 indexerCollection.insertOne(doc);
-            }
+            //}
         } catch (Exception e) {
             System.out.println("Error in inserting new indexer page " + e.getMessage());
         }
@@ -225,10 +213,10 @@ public class Mongo {
 
     public void UpdateIndexWord(String word, Document doc) {
         try {
-            synchronized (this) {
+            //synchronized (this) {
                 indexerCollection.findOneAndDelete(new Document().append("word", word));
                 InsertWordIndexer(doc);
-            }
+            //}
         } catch (Exception e) {
             System.out.println("Error in inserting new indexer page " + e.getMessage());
         }
