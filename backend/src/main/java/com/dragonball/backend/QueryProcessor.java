@@ -53,13 +53,27 @@ public class QueryProcessor {
 
 
                             for (String statement : statements) {
+<<<<<<< Updated upstream
+=======
+<<<<<<< Updated upstream
+                                // Check if all words in the query are present in the statement
+                                if (checkPhrase(statement, ifQuotes)) {
+                                    statement = highlight(statement, ifQuotes,true);
+                                    newStatements.add(statement);
+                                    containsAllWords = true;
+=======
+>>>>>>> Stashed changes
                                 String highlightedStatement = statement;
                                for (int i = 0; i < phrases.size(); i++) {
                                    System.out.println("checking for phrase "+phrases.get(i));
                                    // Check if all words in the query are present in the statement
                                    if (checkPhrase(statement, phrases.get(i))) {
                                        System.out.println("found phrase "+phrases.get(i));
+<<<<<<< Updated upstream
                                        highlightedStatement = highlight(highlightedStatement, phrases.get(i),true);
+=======
+                                       highlightedStatement = highlight(highlightedStatement, phrases.get(i));
+>>>>>>> Stashed changes
                                        phrasesFound[i] = true;
                                    }
                                }
@@ -78,6 +92,10 @@ public class QueryProcessor {
                                     containsAllWords = containsAllWords || phrasesFound[i+1];
                                 } else if (operators.get(i).toUpperCase().equals("NOT")) {
                                     containsAllWords = containsAllWords && !phrasesFound[i+1];
+<<<<<<< Updated upstream
+=======
+>>>>>>> Stashed changes
+>>>>>>> Stashed changes
                                 }
                             }
 
@@ -105,8 +123,19 @@ public class QueryProcessor {
                         List<String> newStatements = new ArrayList<>();
                         for (String statement : statements) {
                             // Check if all words in the query are present in the statement
+<<<<<<< Updated upstream
                             statement = highlight(statement, phrases.get(0), false);
+=======
+<<<<<<< Updated upstream
+                            statement = highlight(statement, ifQuotes, false);
+>>>>>>> Stashed changes
                             newStatements.add(statement);
+=======
+                            String highlightedStatement = highlight(statement, phrases.get(0));
+                            if(!highlightedStatement.equals(statement)) {
+                                newStatements.add(highlightedStatement);
+                            }
+>>>>>>> Stashed changes
                         }
                         Collections.sort(newStatements, Comparator.comparingInt(str -> ((String) str).length()).reversed());
                         doc1.setStatements(newStatements);
@@ -120,12 +149,9 @@ public class QueryProcessor {
         return ret;
     }
 
-    private static String highlight(String input, String word, boolean exactMatch) {
+    private static String highlight(String input, String word) {
         // Regular expression pattern to find "GitHub" ignoring case
-        String Regex = "(?i)" + word;
-        if(exactMatch) {
-            Regex = "\\b(?i)" + word + "\\b";
-        }
+        String Regex = "\\b(?i)" + word + "\\b";
         Pattern pattern = Pattern.compile(Regex);
         Matcher matcher = pattern.matcher(input);
 

@@ -200,7 +200,7 @@ public class Indexer implements Runnable {
         List<String> statements = new ArrayList<>();
         for (Element statementElement : statementElements) {
             String text = statementElement.ownText();
-            if (text.length() > 10)
+            if (text.length() > 10 && text.length() <= 580)
                 statements.add(text);
         }
         return statements;

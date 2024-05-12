@@ -61,7 +61,8 @@ public class WebCrawler implements Runnable {
             if (done)
                 return;
             org.jsoup.nodes.Document doc = GetDoc(seed);
-            if (doc != null) {
+
+            if (doc != null && !doc.title().isEmpty()) {
                 String body = doc.body().text().toString(); // convert text of body html element to string for
                                                             // compacting
                 String hash = CompactSt(body);
