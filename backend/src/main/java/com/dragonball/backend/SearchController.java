@@ -37,8 +37,9 @@ public class SearchController {
         double elapsedTimeInSeconds = (endTime - startTime) / 1_000_000_000.0;
 
 
-
-        searchHistoryService.saveKeyword(keyword);
+        if(page == 1) {
+            searchHistoryService.saveKeyword(keyword);
+        }
 
         PaginatedIndexerDocument paginatedIndexerDocument = new PaginatedIndexerDocument();
         paginatedIndexerDocument.setPagesAvailable((int) Math.ceil((double) results.size() / (double) PER_PAGE));
