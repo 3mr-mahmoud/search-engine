@@ -8,6 +8,8 @@ import java.io.BufferedReader;
 import java.io.FileReader;
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.List;
 import java.util.Vector;
 import com.mongodb.client.model.Projections;
 
@@ -143,6 +145,39 @@ public class Mongo {
 
     }
 
+    public void test () {
+            MongoCollection<Document> collection = crawlerCollection;
+
+            // Define the aggregation pipeline
+            List<Document> pipeline = Arrays.asList(
+                    new Document("$group", new Document("_id", "$URL")
+                            .append("count", new Document("$sum", 1))
+                            .append("ids", new Document("$push", "$_id"))),
+                    new Document("$match", new Document("count", new Document("$gt", 1))),
+        new Document("$project", new Document("_id", 0)
+                .append("url", "$_id").append("ids", "$ids"))
+            );
+
+            // Execute the aggregation pipeline
+            List<Document> duplicates = collection.aggregate(pipeline).into(new ArrayList<>());
+
+            // Iterate over the duplicates and format the IDs as comma-separated strings
+            List<String> result = new ArrayList<>();
+        for (Document duplicate : duplicates) {
+                String url = duplicate.getString("_id");
+                List<Integer> ids = duplicate.getList("ids", Integer.class);
+                ids.remove(0);
+            for (Integer id : ids) {
+                result.add(id.toString());
+            }
+                String idsAsString = String.join(", ", ids.toString());
+                System.out.println("URL: " + url);
+                System.out.println("IDs: " + idsAsString);
+                System.out.println("--------------------------------------------");
+            }
+
+        System.out.println("IDs: " + String.join(", ", result.toString()));
+    }
     public boolean isCrawled(String hash, String URL) {
         try {
             boolean isDup1, isDup2;
@@ -151,7 +186,7 @@ public class Mongo {
                 isDup2 = (found2 = crawlerCollection.find(new Document().append("URL", URL)).first()) != null;
                 if (isDup2) {
                     int count = found2.getInteger("Count");
-                    Document filter = new Document("URL", URL);
+                    Document filter = new Document("_id", found2.getInteger("_id"));
                     Document update = new Document("$set", new Document("Count", ++count));
                     crawlerCollection.updateOne(filter, update);
                 }

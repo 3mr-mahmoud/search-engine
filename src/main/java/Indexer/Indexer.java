@@ -15,13 +15,11 @@ import java.util.List;
 
 public class Indexer implements Runnable {
 
-    private Mongo DB;
-    private int indexedUrls;
-    public static int currentChunkIndex;
+    private  final Mongo DB;
+    public static long currentChunkIndex;
 
     public Indexer(Mongo DB) {
         this.DB = DB;
-        indexedUrls = (int) DB.Count("IndexedUrls");
     }
 
     public void run() {
@@ -33,16 +31,18 @@ public class Indexer implements Runnable {
     }
 
     public void index() {
-        int localChunkIndex = -1;
-
-        while (DB.Count("IndexedUrls") < DB.Count("Crawler")) {
+        long localChunkIndex = -1;
+        long crawlerPages = DB.Count("Crawler");
+        while ( DB.Count("IndexedUrls") < DB.Count("Crawler") && currentChunkIndex < crawlerPages) {
             synchronized (DB) {
                 currentChunkIndex++;
                 localChunkIndex = currentChunkIndex;
             }
 
+            System.out.println(localChunkIndex);
+
             // get my document
-            Document doc = DB.getCollection("Crawler").find().skip(localChunkIndex).first();
+            Document doc = DB.getCollection("Crawler").find(new Document().append("_id",localChunkIndex)).first();
             // process my chunk
             if (doc != null) {
                 String url = doc.getString("URL");

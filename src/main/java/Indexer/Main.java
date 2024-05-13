@@ -11,7 +11,10 @@ public class Main {
         int numOfThreads = 16;
         Thread[] threads = new Thread[numOfThreads];
         int i = 0;
-        Indexer.currentChunkIndex = ((int) DB.Count("IndexedUrls")) - 1;
+        Indexer.currentChunkIndex = (DB.Count("IndexedUrls")) - 1;
+
+        System.out.println("Main"+Indexer.currentChunkIndex);
+
         for (Thread ele : threads){
             ele = new Thread(new Indexer(DB));
             ele.setName(Integer.toString(i++));

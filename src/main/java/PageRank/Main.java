@@ -6,6 +6,6 @@ public class Main {
     public static void main(String[] args)
     {
         PageRank Ranker = new PageRank();
-        Ranker.Rank(20);
+        Ranker.Rank(40);
     }
 }
