@@ -45,7 +45,7 @@ export default {
       this.$router.push({ query: { ...this.$route.query, page: this.page } });
     },
     goToSearchLink() {
-      this.$router.push({ query: { ...this.$route.query, search: this.search, page: this.page } });
+      this.$router.push({ query: { ...this.$route.query, search: this.search, page: 1 } });
     },
     searchHandler() {
       this.loading = true;
@@ -172,11 +172,13 @@ export default {
                 @mouseout="onSuggestions = false" v-if="suggestions.length > 0 && searchFocused && search !== ''">
                 <ul
                   class="absolute w-full bg-white dark:bg-gray-700 dark:border-gray-800 dark:text-white  border border-gray-300 rounded-lg mt-1">
-                  <li v-for="(suggestion, index) in suggestions" :key="index"
-                    class="p-2.5 hover:bg-gray-50 dark:hover:bg-gray-600 rounded-lg cursor-pointer"
-                    @click="searchSuggestion(suggestion.keyword)">{{
-                      suggestion.keyword
-                    }}</li>
+                  <template v-for="(suggestion, index) in suggestions" :key="index">
+                    <li v-if="index <= 5"
+                      class="p-2.5 hover:bg-gray-50 dark:hover:bg-gray-600 rounded-lg cursor-pointer"
+                      @click="searchSuggestion(suggestion.keyword)">{{
+                        suggestion.keyword
+                      }}</li>
+                  </template>
                 </ul>
               </div>
               <button v-if="haveResults" type="button" @click="reset"
