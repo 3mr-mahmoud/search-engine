@@ -128,8 +128,6 @@ public class Mongo {
     // Inside your Mongo class
     // Other methods...
 
-    
-
     public String GetSeed() {
         try {
             Document doc;
@@ -145,53 +143,59 @@ public class Mongo {
 
     }
 
-    public void test () {
-            MongoCollection<Document> collection = crawlerCollection;
+    public void test() {
+        MongoCollection<Document> collection = crawlerCollection;
 
-            // Define the aggregation pipeline
-            List<Document> pipeline = Arrays.asList(
-                    new Document("$group", new Document("_id", "$URL")
-                            .append("count", new Document("$sum", 1))
-                            .append("ids", new Document("$push", "$_id"))),
-                    new Document("$match", new Document("count", new Document("$gt", 1))),
-        new Document("$project", new Document("_id", 0)
-                .append("url", "$_id").append("ids", "$ids"))
-            );
+        // Define the aggregation pipeline
+        List<Document> pipeline = Arrays.asList(
+                new Document("$group", new Document("_id", "$URL")
+                        .append("count", new Document("$sum", 1))
+                        .append("ids", new Document("$push", "$_id"))),
+                new Document("$match", new Document("count", new Document("$gt", 1))),
+                new Document("$project", new Document("_id", 0)
+                        .append("url", "$_id").append("ids", "$ids")));
 
-            // Execute the aggregation pipeline
-            List<Document> duplicates = collection.aggregate(pipeline).into(new ArrayList<>());
+        // Execute the aggregation pipeline
+        List<Document> duplicates = collection.aggregate(pipeline).into(new ArrayList<>());
 
-            // Iterate over the duplicates and format the IDs as comma-separated strings
-            List<String> result = new ArrayList<>();
+        // Iterate over the duplicates and format the IDs as comma-separated strings
+        List<String> result = new ArrayList<>();
         for (Document duplicate : duplicates) {
-                String url = duplicate.getString("_id");
-                List<Integer> ids = duplicate.getList("ids", Integer.class);
-                ids.remove(0);
+            String url = duplicate.getString("_id");
+            List<Integer> ids = duplicate.getList("ids", Integer.class);
+            ids.remove(0);
             for (Integer id : ids) {
                 result.add(id.toString());
             }
-                String idsAsString = String.join(", ", ids.toString());
-                System.out.println("URL: " + url);
-                System.out.println("IDs: " + idsAsString);
-                System.out.println("--------------------------------------------");
-            }
+            String idsAsString = String.join(", ", ids.toString());
+            System.out.println("URL: " + url);
+            System.out.println("IDs: " + idsAsString);
+            System.out.println("--------------------------------------------");
+        }
 
         System.out.println("IDs: " + String.join(", ", result.toString()));
     }
+
     public boolean isCrawled(String hash, String URL) {
         try {
             boolean isDup1, isDup2;
             Document found1, found2;
             synchronized (this) {
+                isDup1 = (found1 = crawlerCollection.find(new Document().append("Compact", hash)).first()) != null;
                 isDup2 = (found2 = crawlerCollection.find(new Document().append("URL", URL)).first()) != null;
                 if (isDup2) {
                     int count = found2.getInteger("Count");
                     Document filter = new Document("_id", found2.getInteger("_id"));
                     Document update = new Document("$set", new Document("Count", ++count));
                     crawlerCollection.updateOne(filter, update);
+                } else if (isDup1) {
+                    int count = found1.getInteger("Count");
+                    Document filter = new Document("_id", found1.getInteger("_id"));
+                    Document update = new Document("$set", new Document("Count", ++count));
+                    crawlerCollection.updateOne(filter, update);
                 }
             }
-            return isDup2;
+            return isDup1 || isDup2;
         } catch (Exception e) {
             System.out.println("Error in checking existance the content of page " + e.getMessage());
             return true;
@@ -231,12 +235,11 @@ public class Mongo {
         }
     }
 
-
     public void InsertWordIndexer(org.bson.Document doc) {
         try {
-            //synchronized (this) {
-                indexerCollection.insertOne(doc);
-            //}
+            // synchronized (this) {
+            indexerCollection.insertOne(doc);
+            // }
         } catch (Exception e) {
             System.out.println("Error in inserting new indexer page " + e.getMessage());
         }
@@ -248,14 +251,15 @@ public class Mongo {
 
     public void UpdateIndexWord(String word, Document doc) {
         try {
-            //synchronized (this) {
-                indexerCollection.findOneAndDelete(new Document().append("word", word));
-                InsertWordIndexer(doc);
-            //}
+            // synchronized (this) {
+            indexerCollection.findOneAndDelete(new Document().append("word", word));
+            InsertWordIndexer(doc);
+            // }
         } catch (Exception e) {
             System.out.println("Error in inserting new indexer page " + e.getMessage());
         }
     }
+
     public ArrayList<Document> getDocumentsContainingWord(String word, String collectionName) {
         ArrayList<Document> documents = new ArrayList<>();
         try {
@@ -264,11 +268,11 @@ public class Mongo {
                 iterable.forEach(documents::add);
             }
         } catch (Exception e) {
-            System.out.println("Error in retrieving documents containing the word " + word + " from collection " + collectionName + ": " + e.getMessage());
+            System.out.println("Error in retrieving documents containing the word " + word + " from collection "
+                    + collectionName + ": " + e.getMessage());
         }
         return documents;
     }
-    
 
     public Document findDocumentInCrawler(int id) {
         return crawlerCollection.find(new Document().append("_id", id)).first();
@@ -281,7 +285,7 @@ public class Mongo {
     public void InitializeRank() {
         Document filter = new Document();
         // Define the update operation
-        Document update = new Document("$set", new Document("rank", 1-0.85 + 0.85 * (1.0 / CountCrawled())));
+        Document update = new Document("$set", new Document("rank", 1 - 0.85 + 0.85 * (1.0 / CountCrawled())));
         // Update multiple documents that match the filter criteria
         crawlerCollection.updateMany(filter, update);
     }
